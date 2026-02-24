@@ -29,14 +29,58 @@ $summary = $db->query("
 ")->fetch(PDO::FETCH_ASSOC);
 
 
-/* Expiring Soon */
+/* Expiring Soon - 60 DAYS NOTICE */
 $expiringSoon = $db->query("
-    SELECT COUNT(*) 
+    SELECT COUNT(DISTINCT product_id) 
     FROM stock_movements
     WHERE expiry_date IS NOT NULL
-    AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+    AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 60 DAY)
+    AND expiry_date >= CURDATE()
+    AND (
+        SELECT SUM(
+            CASE 
+                WHEN type='IN' THEN quantity
+                WHEN type='OUT' THEN -quantity
+            END
+        )
+        FROM stock_movements sm2
+        WHERE sm2.product_id = stock_movements.product_id
+        AND sm2.expiry_date = stock_movements.expiry_date
+    ) > 0
 ")->fetchColumn();
 
+/* Get expiring products data for the link */
+$expiringProducts = $db->query("
+    SELECT DISTINCT 
+        p.id,
+        p.name,
+        c.name as category_name,
+        sm.expiry_date,
+        (
+            SELECT SUM(
+                CASE 
+                    WHEN type='IN' THEN quantity
+                    WHEN type='OUT' THEN -quantity
+                END
+            )
+            FROM stock_movements sm2
+            WHERE sm2.product_id = p.id
+            AND sm2.expiry_date = sm.expiry_date
+        ) as batch_stock
+    FROM products p
+    JOIN categories c ON p.category_id = c.id
+    JOIN stock_movements sm ON sm.product_id = p.id
+    WHERE sm.expiry_date IS NOT NULL
+    AND sm.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 60 DAY)
+    AND sm.expiry_date >= CURDATE()
+    AND p.is_active = 1
+    GROUP BY p.id, sm.expiry_date
+    HAVING batch_stock > 0
+    ORDER BY sm.expiry_date ASC
+")->fetchAll(PDO::FETCH_ASSOC);
+
+/* Encode expiring products for JavaScript */
+$expiringProductsJson = json_encode($expiringProducts);
 
 /* CATEGORY DATA (REAL DATA NOW) */
 $categoryData = $db->query("
@@ -53,8 +97,6 @@ LEFT JOIN products p ON p.category_id = c.id
 LEFT JOIN stock_movements sm ON sm.product_id = p.id
 GROUP BY c.id
 ")->fetchAll(PDO::FETCH_ASSOC);
-
-
 
 $categoryLabels = [];
 $categoryTotals = [];
@@ -142,15 +184,17 @@ body{
     transition: all .25s ease;
     position:relative;
     overflow:hidden;
+    cursor: pointer; /* Make cards clickable */
+    text-decoration: none;
+    color: inherit;
+    display: block;
 }
-
 
 .card:hover{
     transform: translateY(-6px);
     box-shadow:
         0 18px 35px rgba(0,0,0,.2);
 }
-
 
 .card h3{
     font-size:13px;
@@ -255,9 +299,100 @@ tr:hover{
     background:#fafafa;
 }
 
+/* ================= EXPIRING PRODUCTS MODAL ================= */
+.expiring-modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s;
+}
+
+.expiring-modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 25px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    animation: slideIn 0.3s;
+}
+
+.expiring-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.expiring-modal-header h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 24px;
+}
+
+.expiring-modal-close {
+    font-size: 28px;
+    font-weight: bold;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.expiring-modal-close:hover {
+    color: #333;
+}
+
+.expiring-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.expiring-badge.warning-60 {
+    background-color: #f39c12;
+    color: white;
+}
+
+.expiring-badge.warning-30 {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.expiring-badge.safe {
+    background-color: #27ae60;
+    color: white;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 /* MOBILE */
 @media(max-width:900px){
-
     .charts{
         grid-template-columns:1fr;
     }
@@ -265,11 +400,16 @@ tr:hover{
     .chart-box{
         width:100%;
     }
+    
+    .expiring-modal-content {
+        margin: 10% auto;
+        width: 95%;
+    }
 }
+
 *{
     transition: background-color .2s, box-shadow .2s, transform .2s;
 }
-
 
 </style>
 </head>
@@ -294,29 +434,31 @@ tr:hover{
 
 <div class="dashboard-grid">
 
-<div class="card total">
+<a href="products.php" class="card total">
 <h3>Total Products</h3>
 <div class="value"><?= $summary['total_products'] ?? 0 ?></div>
-</div>
+</a>
 
-<div class="card low">
+<a href="products.php?filter=low_stock" class="card low">
 <h3>Low Stock Items</h3>
 <div class="value"><?= $summary['low_stock'] ?? 0 ?></div>
-</div>
+</a>
 
-<div class="card out">
+<a href="products.php?filter=out_stock" class="card out">
 <h3>Out of Stock</h3>
 <div class="value"><?= $summary['out_stock'] ?? 0 ?></div>
-</div>
+</a>
 
-<div class="card items">
+<a href="products.php" class="card items">
 <h3>Total Items</h3>
 <div class="value"><?= $summary['total_items'] ?? 0 ?></div>
-</div>
+</a>
 
-<div class="card expire">
-<h3>Expiring Soon</h3>
+<!-- Expiring Soon Card - Now Clickable -->
+<div class="card expire" onclick="showExpiringProducts(<?= htmlspecialchars($expiringProductsJson) ?>)" style="cursor: pointer;">
+<h3>⚠️ Expiring Soon (60 days)</h3>
 <div class="value"><?= $expiringSoon ?? 0 ?></div>
+<div style="font-size: 12px; color: #666; margin-top: 5px;">Click to view details</div>
 </div>
 
 </div>
@@ -385,6 +527,19 @@ foreach($recent as $r):
 </div>
 </div>
 
+<!-- ================= EXPIRING PRODUCTS MODAL ================= -->
+<div id="expiringModal" class="expiring-modal">
+    <div class="expiring-modal-content">
+        <div class="expiring-modal-header">
+            <h2>Products Expiring Within 60 Days</h2>
+            <span class="expiring-modal-close" onclick="closeExpiringModal()">&times;</span>
+        </div>
+        <div id="expiringProductsList">
+            <!-- Products will be loaded here -->
+        </div>
+    </div>
+</div>
+
 <!-- ================= SIDEBAR TOGGLE ================= -->
 <script>
 function toggleSidebar() {
@@ -399,6 +554,80 @@ document.addEventListener("click", function (e) {
 
     if (!sidebar.contains(e.target) && !btn.contains(e.target)) {
         sidebar.classList.remove("active");
+    }
+});
+
+// ================= EXPIRING PRODUCTS MODAL FUNCTION =================
+function showExpiringProducts(products) {
+    console.log("Expiring products:", products); // Debug log
+    
+    const modal = document.getElementById('expiringModal');
+    const container = document.getElementById('expiringProductsList');
+    
+    if (!products || products.length === 0) {
+        container.innerHTML = '<p style="text-align:center; padding:20px; color:#666;">No products expiring within 60 days.</p>';
+    } else {
+        let html = `
+            <table style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Category</th>
+                        <th>Batch</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        products.forEach(product => {
+            const today = new Date();
+            const expDate = new Date(product.expiry_date);
+            const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+            
+            let statusClass = '';
+            let statusText = '';
+            
+            if (daysLeft <= 30) {
+                statusClass = 'expiring-badge warning-30';
+                statusText = `${daysLeft} days left (Urgent)`;
+            } else {
+                statusClass = 'expiring-badge warning-60';
+                statusText = `${daysLeft} days left`;
+            }
+            
+            html += `
+                <tr>
+                    <td><strong>${product.name}</strong></td>
+                    <td>${product.category_name || 'N/A'}</td>
+                    <td>${product.expiry_date}</td>
+                    <td>${product.batch_stock}</td>
+                    <td><span class="${statusClass}">${statusText}</span></td>
+                    <td>
+                        <a href="products.php?batch=${product.expiry_date}&id=${product.id}" style="text-decoration:none; color:#3498db;" title="View in Products">👁️ View</a>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+    
+    modal.style.display = 'block';
+}
+
+function closeExpiringModal() {
+    document.getElementById('expiringModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('expiringModal');
+    if (event.target === modal) {
+        closeExpiringModal();
     }
 });
 </script>
@@ -426,9 +655,7 @@ new Chart(document.getElementById('stockChart'), {
         labels: ['Healthy Stock', 'Low Stock', 'Out of Stock'],
         datasets: [{
             data: [
-                <?= ($summary['total_products']
-                    - $summary['low_stock']
-                    - $summary['out_stock']) ?>,
+                <?= max(0, ($summary['total_products'] ?? 0) - ($summary['low_stock'] ?? 0) - ($summary['out_stock'] ?? 0)) ?>,
                 <?= $summary['low_stock'] ?? 0 ?>,
                 <?= $summary['out_stock'] ?? 0 ?>
             ],
