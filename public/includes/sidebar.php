@@ -28,6 +28,11 @@
         <i class="fas fa-chart-bar"></i>
         <span>📈 Reports</span>
     </a>
+
+    <a href="audit_trail.php" class="<?= basename($_SERVER['PHP_SELF']) == 'audit_trail.php' ? 'active' : '' ?>">
+    <i class="fas fa-history"></i>
+    <span>📋 Audit Trail</span>
+</a>
     
     <a href="logout.php" onclick="return confirm('Are you sure you want to logout?');" class="logout-btn">
         <i class="fas fa-sign-out-alt"></i>

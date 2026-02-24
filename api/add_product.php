@@ -13,12 +13,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$name = $_POST['name'] ?? '';
+$name = trim($_POST['name'] ?? '');
 $category_id = $_POST['category_id'] ?? '';
-$unit = $_POST['unit'] ?? '';
+$unit = trim($_POST['unit'] ?? '');
 $min_stock = $_POST['min_stock'] ?? '';
+$has_expiry = isset($_POST['has_expiry']) ? (int)$_POST['has_expiry'] : 1;
 
-if (!$name || !$category_id || !$unit || !$min_stock) {
+// Validate required fields
+if (empty($name) || empty($category_id) || empty($unit) || $min_stock === '') {
     echo json_encode(['status' => 'error', 'message' => 'All fields are required']);
     exit;
 }
@@ -29,8 +31,8 @@ if (!is_numeric($category_id) || !is_numeric($min_stock)) {
 }
 
 try {
-    // Check if product already exists
-    $checkStmt = $db->prepare("SELECT id FROM products WHERE name = ? AND category_id = ? AND is_active = 1");
+    // Check if product already exists (case-insensitive)
+    $checkStmt = $db->prepare("SELECT id FROM products WHERE LOWER(name) = LOWER(?) AND category_id = ? AND is_active = 1");
     $checkStmt->execute([$name, $category_id]);
     
     if ($checkStmt->fetch()) {
@@ -38,13 +40,22 @@ try {
         exit;
     }
     
-    $sql = "INSERT INTO products (name, category_id, unit, min_stock, is_active) VALUES (?, ?, ?, ?, 1)";
+    // Insert new product
+    $sql = "INSERT INTO products (name, category_id, unit, min_stock, has_expiry, is_active) VALUES (?, ?, ?, ?, ?, 1)";
     $stmt = $db->prepare($sql);
-    $result = $stmt->execute([$name, $category_id, $unit, $min_stock]);
+    $result = $stmt->execute([$name, $category_id, $unit, $min_stock, $has_expiry]);
     
     if ($result) {
-        echo json_encode(['status' => 'success', 'message' => 'Product added successfully']);
+        // Get the newly created product ID
+        $newId = $db->lastInsertId();
+        echo json_encode([
+            'status' => 'success', 
+            'message' => 'Product added successfully',
+            'id' => $newId
+        ]);
     } else {
+        $error = $stmt->errorInfo();
+        error_log("Database error in add_product.php: " . print_r($error, true));
         echo json_encode(['status' => 'error', 'message' => 'Failed to add product']);
     }
 } catch (PDOException $e) {
