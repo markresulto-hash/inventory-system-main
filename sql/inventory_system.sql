@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 24, 2026 at 03:27 AM
+-- Generation Time: Feb 25, 2026 at 08:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -99,16 +99,51 @@ CREATE TABLE `products` (
   `min_stock` int(11) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `is_active` tinyint(1) DEFAULT 1,
-  `expiry_date` date DEFAULT NULL
+  `expiry_date` date DEFAULT NULL,
+  `has_expiry` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `products`
 --
 
-INSERT INTO `products` (`id`, `name`, `category_id`, `unit`, `min_stock`, `created_at`, `is_active`, `expiry_date`) VALUES
-(1, 'sack rice', 2, 'sack 25 kg', 5, '2026-02-24 01:49:48', 1, NULL),
-(2, 'sanitary wipes', 3, 'packs', 10, '2026-02-24 02:13:36', 1, NULL);
+INSERT INTO `products` (`id`, `name`, `category_id`, `unit`, `min_stock`, `created_at`, `is_active`, `expiry_date`, `has_expiry`) VALUES
+(1, 'fita', 2, 'piece', 10, '2026-02-24 07:56:17', 1, NULL, 1),
+(2, 'tissue', 3, 'pack', 10, '2026-02-24 07:56:34', 1, NULL, 0),
+(3, 'medical gloves', 4, 'piece', 10, '2026-02-24 07:56:57', 1, NULL, 0),
+(4, 'diapers', 3, 'piece', 30, '2026-02-24 08:16:29', 0, NULL, 0),
+(5, 'rice sack', 2, 'kilogram', 50, '2026-02-24 08:17:05', 1, NULL, 1),
+(6, 'hansel', 3, 'pack', 40, '2026-02-25 03:49:39', 0, NULL, 1),
+(7, 'milo', 8, 'piece', 50, '2026-02-25 03:57:29', 1, NULL, 1),
+(8, 'water botttles', 2, 'bottle', 60, '2026-02-25 04:08:37', 1, NULL, 1),
+(9, 'Wipes', 3, 'pack', 20, '2026-02-25 07:29:31', 1, NULL, 0),
+(10, 'HANSEL', 2, 'pack', 100000, '2026-02-25 07:35:25', 1, NULL, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `product_audit`
+--
+
+CREATE TABLE `product_audit` (
+  `id` int(11) NOT NULL,
+  `product_id` int(11) NOT NULL,
+  `action` varchar(20) NOT NULL,
+  `old_data` text DEFAULT NULL,
+  `new_data` text DEFAULT NULL,
+  `staff_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `product_audit`
+--
+
+INSERT INTO `product_audit` (`id`, `product_id`, `action`, `old_data`, `new_data`, `staff_id`, `created_at`) VALUES
+(1, 7, 'ADD', NULL, '{\"name\":\"milo\",\"category_id\":\"8\",\"category_name\":\"Snacks\",\"unit\":\"piece\",\"min_stock\":\"50\",\"has_expiry\":1}', 7, '2026-02-25 03:57:29'),
+(2, 8, 'ADD', NULL, '{\"name\":\"water botttles\",\"category_id\":\"2\",\"category_name\":\"Food\",\"unit\":\"bottle\",\"min_stock\":\"60\",\"has_expiry\":1}', 7, '2026-02-25 04:08:37'),
+(3, 9, 'ADD', NULL, '{\"name\":\"Wipes\",\"category_id\":\"3\",\"category_name\":\"Hygiene\",\"unit\":\"pack\",\"min_stock\":\"20\",\"has_expiry\":0}', 7, '2026-02-25 07:29:31'),
+(4, 10, 'ADD', NULL, '{\"name\":\"HANSEL\",\"category_id\":\"2\",\"category_name\":\"Food\",\"unit\":\"pack\",\"min_stock\":\"100000\",\"has_expiry\":1}', 7, '2026-02-25 07:35:25');
 
 -- --------------------------------------------------------
 
@@ -169,13 +204,22 @@ CREATE TABLE `stock_movements` (
 --
 
 INSERT INTO `stock_movements` (`id`, `product_id`, `staff_id`, `supplier_id`, `type`, `quantity`, `note`, `reason`, `expiry_date`, `created_at`) VALUES
-(1, 1, NULL, NULL, 'IN', 10, 'purchase', NULL, '2026-05-14', '2026-02-24 01:50:16'),
-(2, 1, NULL, NULL, 'IN', 4, NULL, NULL, '2026-05-14', '2026-02-24 01:50:27'),
-(3, 1, NULL, NULL, 'IN', 3, 'purchase', NULL, '2026-05-14', '2026-02-24 01:50:48'),
-(4, 1, NULL, NULL, 'IN', 10, 'purchase', NULL, '2026-04-17', '2026-02-24 01:51:06'),
-(5, 1, NULL, NULL, 'OUT', 2, 'used', NULL, '2026-04-17', '2026-02-24 01:51:32'),
-(6, 1, NULL, NULL, 'OUT', 4, 'used', NULL, '2026-04-17', '2026-02-24 01:51:41'),
-(7, 2, NULL, NULL, 'IN', 15, NULL, NULL, '2028-10-12', '2026-02-24 02:14:06');
+(1, 1, NULL, NULL, 'IN', 12, NULL, NULL, '2027-09-16', '2026-02-24 08:11:10'),
+(2, 1, NULL, NULL, 'OUT', 12, NULL, NULL, '2027-09-16', '2026-02-24 08:11:19'),
+(3, 5, NULL, NULL, 'IN', 25, NULL, NULL, '2027-11-19', '2026-02-24 08:17:23'),
+(4, 5, NULL, NULL, 'IN', 10, 'donation', NULL, '2028-11-17', '2026-02-24 08:17:44'),
+(5, 5, NULL, NULL, 'OUT', 10, 'consumed', NULL, '2028-11-17', '2026-02-24 08:18:15'),
+(6, 4, 1, NULL, 'IN', 10, NULL, NULL, NULL, '2026-02-25 02:59:53'),
+(7, 1, 1, NULL, 'IN', 20, NULL, NULL, '2027-07-16', '2026-02-25 03:00:29'),
+(8, 4, 1, NULL, 'IN', 10, 'donation', NULL, NULL, '2026-02-25 03:41:02'),
+(15, 7, 7, NULL, 'IN', 50, NULL, NULL, '2028-09-07', '2026-02-25 03:57:53'),
+(16, 5, 7, NULL, 'IN', 1, NULL, NULL, '2028-03-25', '2026-02-25 05:28:58'),
+(17, 5, 7, NULL, 'OUT', 1, NULL, NULL, '2027-11-19', '2026-02-25 05:29:58'),
+(18, 5, 7, NULL, 'OUT', 1, NULL, NULL, '2027-11-19', '2026-02-25 05:30:07'),
+(19, 5, 7, NULL, 'OUT', 1, NULL, NULL, '2027-11-19', '2026-02-25 05:30:34'),
+(20, 1, 7, NULL, 'OUT', 20, 'Meryenda', NULL, '2027-07-16', '2026-02-25 07:31:11'),
+(21, 10, 7, NULL, 'IN', 100, NULL, NULL, '2027-02-25', '2026-02-25 07:38:01'),
+(22, 10, 7, NULL, 'OUT', 100, 'ubos na', NULL, '2027-02-25', '2026-02-25 07:38:29');
 
 -- --------------------------------------------------------
 
@@ -209,12 +253,13 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `pass`, `created_at`, `remember_token`) VALUES
-(1, 'admin', 'admin123', '2026-02-19 05:16:18', '9f94c8aa9a5c3575d899368135314aa83ddb021e680f9875652c830e9fe048b8'),
+(1, 'admin', 'admin123', '2026-02-19 05:16:18', NULL),
 (2, 'staff', 'staff123', '2026-02-19 05:16:18', NULL),
 (3, 'manager', 'manager123', '2026-02-19 05:16:18', NULL),
 (4, 'jm', 'Admin@123', '2026-02-19 07:46:15', NULL),
 (5, 'jmm', 'Admin@123', '2026-02-19 07:47:08', NULL),
-(6, 'AADMIN', 'Admin@12345', '2026-02-20 06:44:42', NULL);
+(6, 'AADMIN', 'Admin@12345', '2026-02-20 06:44:42', NULL),
+(7, 'markmark', 'Markmark@1', '2026-02-25 03:48:44', '876e1153593666ef6b3fa9e32bcb454abba639e046325a5e747f4fc33389ec4f');
 
 -- --------------------------------------------------------
 
@@ -248,6 +293,14 @@ ALTER TABLE `categories`
 ALTER TABLE `products`
   ADD PRIMARY KEY (`id`),
   ADD KEY `category_id` (`category_id`);
+
+--
+-- Indexes for table `product_audit`
+--
+ALTER TABLE `product_audit`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `product_id` (`product_id`),
+  ADD KEY `staff_id` (`staff_id`);
 
 --
 -- Indexes for table `residents`
@@ -302,7 +355,13 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `product_audit`
+--
+ALTER TABLE `product_audit`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `residents`
@@ -320,7 +379,7 @@ ALTER TABLE `staff`
 -- AUTO_INCREMENT for table `stock_movements`
 --
 ALTER TABLE `stock_movements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `suppliers`
@@ -332,7 +391,7 @@ ALTER TABLE `suppliers`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Constraints for dumped tables
@@ -345,11 +404,18 @@ ALTER TABLE `products`
   ADD CONSTRAINT `products_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`);
 
 --
+-- Constraints for table `product_audit`
+--
+ALTER TABLE `product_audit`
+  ADD CONSTRAINT `product_audit_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `product_audit_ibfk_2` FOREIGN KEY (`staff_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
 -- Constraints for table `stock_movements`
 --
 ALTER TABLE `stock_movements`
   ADD CONSTRAINT `stock_movements_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`),
-  ADD CONSTRAINT `stock_movements_ibfk_2` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`id`),
+  ADD CONSTRAINT `stock_movements_ibfk_2` FOREIGN KEY (`staff_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `stock_movements_ibfk_3` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`);
 COMMIT;
 

@@ -1,8 +1,15 @@
 <?php
+session_start();
 require_once __DIR__ . '/../app/config/database.php';
 $db = Database::connect();
 
 header('Content-Type: application/json');
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['status' => 'error', 'message' => 'User not logged in']);
+    exit;
+}
 
 // Enable error reporting for debugging
 error_log("Stock movement request received: " . print_r($_POST, true));
@@ -17,6 +24,7 @@ $quantity = $_POST['quantity'] ?? '';
 $type = $_POST['type'] ?? '';
 $expiryDate = $_POST['expiry_date'] ?? null;
 $notes = $_POST['notes'] ?? '';
+$staff_id = $_SESSION['user_id']; // Get logged-in user ID
 
 // Validation
 if (!$productId || !$quantity || !$type) {
@@ -67,12 +75,14 @@ if ($type === 'OUT') {
 }
 
 try {
-    // Insert stock movement - using your table column names
+    $db->beginTransaction();
+    
+    // Insert stock movement with staff_id
     $sql = "
         INSERT INTO stock_movements 
-        (product_id, type, quantity, expiry_date, note, created_at) 
+        (product_id, type, quantity, expiry_date, note, staff_id, created_at) 
         VALUES 
-        (:product_id, :type, :quantity, :expiry_date, :note, NOW())
+        (:product_id, :type, :quantity, :expiry_date, :note, :staff_id, NOW())
     ";
 
     $stmt = $db->prepare($sql);
@@ -81,15 +91,19 @@ try {
     $stmt->bindValue(':quantity', $quantity, PDO::PARAM_INT);
     $stmt->bindValue(':expiry_date', $expiryDate ?: null);
     $stmt->bindValue(':note', $notes ?: null);
+    $stmt->bindValue(':staff_id', $staff_id, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
+        $db->commit();
         echo json_encode(['status' => 'success', 'message' => 'Stock movement recorded successfully']);
     } else {
+        $db->rollBack();
         $error = $stmt->errorInfo();
         error_log("Database error: " . print_r($error, true));
         echo json_encode(['status' => 'error', 'message' => 'Failed to record stock movement']);
     }
 } catch (PDOException $e) {
+    $db->rollBack();
     error_log("PDO Exception: " . $e->getMessage());
     echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
 }

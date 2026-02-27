@@ -14,6 +14,7 @@ $search = trim($_GET['search'] ?? '');
 $typeFilter = $_GET['type'] ?? '';
 $dateFrom = $_GET['date_from'] ?? '';
 $dateTo = $_GET['date_to'] ?? '';
+$staffFilter = $_GET['staff'] ?? ''; // Added staff filter
 $export_limit = isset($_GET['export_limit']) ? (int)$_GET['export_limit'] : null;
 $export_offset = isset($_GET['export_offset']) ? (int)$_GET['export_offset'] : null;
 $page = $_GET['page'] ?? 1;
@@ -25,13 +26,18 @@ $params = [];
 if ($export_type !== 'complete') {
     // Apply filters for non-complete exports
     if ($search !== '') {
-        $where[] = "(p.name LIKE :search OR sm.note LIKE :search OR sm.reason LIKE :search OR sm.id LIKE :search)";
+        $where[] = "(p.name LIKE :search OR sm.note LIKE :search OR sm.reason LIKE :search OR sm.id LIKE :search OR staff.name LIKE :search)";
         $params[':search'] = "%{$search}%";
     }
 
     if ($typeFilter !== '' && in_array($typeFilter, ['IN', 'OUT'])) {
         $where[] = "sm.type = :type";
         $params[':type'] = $typeFilter;
+    }
+
+    if ($staffFilter !== '' && is_numeric($staffFilter)) {
+        $where[] = "sm.staff_id = :staff_id";
+        $params[':staff_id'] = $staffFilter;
     }
 
     if ($dateFrom !== '') {
@@ -55,7 +61,10 @@ if ($export_type === 'page' && $export_limit !== null && $export_offset !== null
 
 try {
     // Get total count for filename
-    $countSql = "SELECT COUNT(*) FROM stock_movements sm LEFT JOIN products p ON sm.product_id = p.id $whereSQL";
+    $countSql = "SELECT COUNT(*) FROM stock_movements sm 
+                 LEFT JOIN products p ON sm.product_id = p.id 
+                 LEFT JOIN users staff ON sm.staff_id = staff.id 
+                 $whereSQL";
     $countStmt = $db->prepare($countSql);
     foreach ($params as $key => $value) {
         $countStmt->bindValue($key, $value);
@@ -63,7 +72,7 @@ try {
     $countStmt->execute();
     $recordCount = $countStmt->fetchColumn();
 
-    // Fetch data
+    // Fetch data with staff information
     $sql = "
         SELECT 
             sm.id,
@@ -76,10 +85,13 @@ try {
             sm.note,
             sm.reason,
             sm.expiry_date,
-            sm.created_at
+            sm.created_at,
+            sm.staff_id,
+            staff.name as staff_name
         FROM stock_movements sm
         LEFT JOIN products p ON sm.product_id = p.id
         LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN users staff ON sm.staff_id = staff.id
         $whereSQL
         ORDER BY sm.created_at DESC
         $limitSQL
@@ -129,7 +141,7 @@ try {
     // Add UTF-8 BOM for Excel compatibility
     fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
-    // Add CSV headers
+    // Add CSV headers - Added Staff column
     fputcsv($output, [
         'ID',
         'Date',
@@ -140,12 +152,16 @@ try {
         'Type',
         'Quantity',
         'Batch/Expiry',
+        'Staff', // New column
         'Notes/Reason',
         'Product ID'
     ]);
 
     // Add data rows
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        // Format staff name - show 'System' if no staff assigned
+        $staffName = !empty($row['staff_name']) ? $row['staff_name'] : 'System';
+        
         fputcsv($output, [
             $row['id'],
             date('Y-m-d', strtotime($row['created_at'])),
@@ -156,6 +172,7 @@ try {
             $row['type'],
             ($row['type'] == 'IN' ? '+' : '-') . $row['quantity'],
             $row['expiry_date'] ?? 'No batch',
+            $staffName, // Staff name
             $row['note'] ?? $row['reason'] ?? '',
             $row['product_id'] ?? 'N/A'
         ]);

@@ -112,194 +112,212 @@ foreach($categoryData as $c){
 <head>
 <title>Inventory Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <link rel="stylesheet" href="assets/css/style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-
-/* ================= GLOBAL ================= */
-
-body{
-    margin:0;
-    background:
-        radial-gradient(circle at 20% 20%, #ffffff 0%, #f1f4f9 40%),
-        linear-gradient(180deg,#eef2f8,#f7f9fc);
+/* ================= MAIN CONTENT STYLES ONLY ================= */
+.main {
+    flex: 1;
+    padding: 25px 30px;
+    background: #f5f7fb;
+    overflow-y: auto;
+    height: 100vh;
 }
 
-
-.container{
-    display:flex;
-    min-height:100vh;
+/* Menu Toggle - Only for mobile */
+.menu-toggle {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    background: white;
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 10px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    color: #333;
 }
 
-/* ================= MAIN ================= */
-
-.main{
-    flex:1;
-    padding:28px;
-    background:#f1f4f9;
+/* Dashboard Header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
 }
 
-/* Prevent UI shifting */
-.main,
-.section,
-.card{
-    box-sizing:border-box;
+.dashboard-header h1 {
+    font-size: 24px;
+    color: #1e293b;
+    font-weight: 600;
 }
 
-/* HEADER */
-.dashboard-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:28px;
+.date-badge {
+    background: white;
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 14px;
+    color: #4b5563;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
 }
 
-.dashboard-header h1{
-    font-weight:700;
-    letter-spacing:.3px;
-    color:#2c3e50;
+/* Stats Cards */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
 }
 
-/* ================= CARDS ================= */
-
-.dashboard-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
-    gap:20px;
-    margin-bottom:25px;
-}
-
-.card{
-    background: rgba(255,255,255,0.85);
-    backdrop-filter: blur(8px);
-    padding:24px;
-    border-radius:16px;
-
-    box-shadow:
-        0 10px 25px rgba(0,0,0,.06),
-        inset 0 1px 0 rgba(255,255,255,.6);
-
-    transition: all .25s ease;
-    position:relative;
-    overflow:hidden;
-    cursor: pointer; /* Make cards clickable */
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     text-decoration: none;
     color: inherit;
     display: block;
+    transition: all 0.2s;
+    border: 1px solid #edf2f7;
 }
 
-.card:hover{
-    transform: translateY(-6px);
-    box-shadow:
-        0 18px 35px rgba(0,0,0,.2);
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
 }
 
-.card h3{
-    font-size:13px;
-    color:#888;
-    margin:0;
-}
-.card::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:linear-gradient(
-        120deg,
-        transparent,
-        rgba(255,255,255,.35),
-        transparent
-    );
-    opacity:0;
-    transition:.4s;
+.card h3 {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 8px;
+    font-weight: 500;
 }
 
-.card:hover::after{
-    opacity:1;
+.card .value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 5px;
 }
 
-.value{
-    font-size:34px;
-    font-weight:700;
-    margin-top:10px;
-    letter-spacing:.5px;
-    color:#2c3e50;
-}
-.card:hover .value{
-    transform:scale(1.03);
+.card .label {
+    font-size: 12px;
+    color: #94a3b8;
 }
 
-/* colored glow bars */
-.card.total{border-left:5px solid #3498db;}
-.card.low{border-left:5px solid #f39c12;}
-.card.out{border-left:5px solid #e74c3c;}
-.card.items{border-left:5px solid #2ecc71;}
-.card.expire{border-left:5px solid #9b59b6;}
+/* Card Colors */
+.card.total { border-left: 3px solid #3b82f6; }
+.card.low { border-left: 3px solid #f59e0b; }
+.card.out { border-left: 3px solid #ef4444; }
+.card.items { border-left: 3px solid #10b981; }
+.card.expire { border-left: 3px solid #8b5cf6; }
 
-/* ================= SECTIONS ================= */
-
-.section{
-    background: rgba(255,255,255,0.9);
-    backdrop-filter: blur(6px);
-    padding:24px;
-    border-radius:16px;
-
-    box-shadow:
-        0 8px 22px rgba(0,0,0,.05);
-
-    margin-top:22px;
+/* Charts Section */
+.section {
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    margin-top: 20px;
+    border: 1px solid #edf2f7;
 }
 
-/* ================= CHARTS ================= */
-
-.charts{
-    display:grid;
-    grid-template-columns:repeat(2,420px);
-    gap:20px;
+.section h3 {
+    font-size: 18px;
+    color: #1e293b;
+    margin-bottom: 20px;
+    font-weight: 600;
 }
 
-/* fixed size prevents layout jumping */
-.chart-box{
-    width:420px;
-    height:260px;
-    background:#fff;
-    border-radius:14px;
-    padding:12px;
-
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.7),
-        0 4px 14px rgba(0,0,0,.04);
+.charts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
 }
 
-
-.chart-box canvas{
-    width:100%!important;
-    height:220px!important;
+.chart-box {
+    height: 250px;
+    padding: 10px;
+    position: relative;
 }
 
-/* ================= TABLE ================= */
-
-table{
-    width:100%;
-    border-collapse:collapse;
+/* Cool hover effect for pie chart */
+.chart-box:first-child canvas {
+    transition: filter 0.3s ease;
+    cursor: pointer;
 }
 
-th,td{
-    padding:12px;
-    border-bottom:1px solid #eee;
+.chart-box:first-child canvas:hover {
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+    animation: pulse 1.5s infinite;
 }
 
-th{
-    background:#f7f9fc;
-    font-weight:600;
+@keyframes pulse {
+    0% {
+        filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.3));
+    }
+    50% {
+        filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.7));
+    }
+    100% {
+        filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.3));
+    }
 }
 
-tr:hover{
-    background:#fafafa;
+/* Segment hover effect will be handled by Chart.js options */
+
+/* Table */
+.table-responsive {
+    overflow-x: auto;
 }
 
-/* ================= EXPIRING PRODUCTS MODAL ================= */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    text-align: left;
+    padding: 12px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 600;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+td {
+    padding: 12px;
+    border-bottom: 1px solid #eef2f6;
+    color: #334155;
+    font-size: 13px;
+}
+
+.type-badge {
+    padding: 4px 10px;
+    border-radius: 30px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.type-badge.in {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.type-badge.out {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Modal */
 .expiring-modal {
     display: none;
     position: fixed;
@@ -308,12 +326,11 @@ tr:hover{
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    animation: fadeIn 0.3s;
+    background: rgba(0,0,0,0.5);
 }
 
 .expiring-modal-content {
-    background-color: white;
+    background: white;
     margin: 5% auto;
     padding: 25px;
     border-radius: 16px;
@@ -321,8 +338,6 @@ tr:hover{
     max-width: 800px;
     max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    animation: slideIn 0.3s;
 }
 
 .expiring-modal-header {
@@ -330,87 +345,69 @@ tr:hover{
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .expiring-modal-header h2 {
-    margin: 0;
-    color: #2c3e50;
-    font-size: 24px;
+    font-size: 20px;
+    color: #1e293b;
 }
 
 .expiring-modal-close {
     font-size: 28px;
-    font-weight: bold;
-    color: #888;
+    color: #94a3b8;
     cursor: pointer;
-    transition: color 0.3s;
-}
-
-.expiring-modal-close:hover {
-    color: #333;
 }
 
 .expiring-badge {
+    padding: 4px 10px;
+    border-radius: 30px;
+    font-size: 11px;
+    font-weight: 600;
     display: inline-block;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
 }
 
 .expiring-badge.warning-60 {
-    background-color: #f39c12;
-    color: white;
+    background: #fef3c7;
+    color: #92400e;
 }
 
 .expiring-badge.warning-30 {
-    background-color: #e74c3c;
-    color: white;
+    background: #fee2e2;
+    color: #b91c1c;
 }
 
-.expiring-badge.safe {
-    background-color: #27ae60;
-    color: white;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-/* MOBILE */
-@media(max-width:900px){
-    .charts{
-        grid-template-columns:1fr;
-    }
-
-    .chart-box{
-        width:100%;
+/* Mobile */
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: block;
     }
     
-    .expiring-modal-content {
-        margin: 10% auto;
-        width: 95%;
+    .main {
+        padding: 70px 15px 20px;
+    }
+    
+    .dashboard-header {
+        flex-direction: column;
+        align-items: start;
+        gap: 10px;
+    }
+    
+    .charts {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-box {
+        height: 220px;
     }
 }
 
-*{
-    transition: background-color .2s, box-shadow .2s, transform .2s;
+@media (max-width: 480px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
 }
-
 </style>
 </head>
 
@@ -424,179 +421,157 @@ tr:hover{
 
 <div class="main">
 
-<button class="menu-toggle" onclick="toggleSidebar()">☰ Menu</button>
+<button class="menu-toggle" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+</button>
 
 <div class="dashboard-header">
-    <h1>📊 Dashboard</h1>
+    <h1>Dashboard</h1>
+    <div class="date-badge">
+        <i class="far fa-calendar-alt" style="margin-right: 8px;"></i>
+        <?= date('F j, Y') ?>
+    </div>
 </div>
 
-<!-- ================= CARDS ================= -->
-
+<!-- Stats Cards -->
 <div class="dashboard-grid">
+    <a href="products.php" class="card total">
+        <h3>Total Products</h3>
+        <div class="value"><?= number_format($summary['total_products'] ?? 0) ?></div>
+        <div class="label">Active products</div>
+    </a>
 
-<a href="products.php" class="card total">
-<h3>Total Products</h3>
-<div class="value"><?= $summary['total_products'] ?? 0 ?></div>
-</a>
+    <a href="products.php?filter=low_stock" class="card low">
+        <h3>Low Stock</h3>
+        <div class="value"><?= $summary['low_stock'] ?? 0 ?></div>
+        <div class="label">Need attention</div>
+    </a>
 
-<a href="products.php?filter=low_stock" class="card low">
-<h3>Low Stock Items</h3>
-<div class="value"><?= $summary['low_stock'] ?? 0 ?></div>
-</a>
+    <a href="products.php?filter=out_stock" class="card out">
+        <h3>Out of Stock</h3>
+        <div class="value"><?= $summary['out_stock'] ?? 0 ?></div>
+        <div class="label">Require restock</div>
+    </a>
 
-<a href="products.php?filter=out_stock" class="card out">
-<h3>Out of Stock</h3>
-<div class="value"><?= $summary['out_stock'] ?? 0 ?></div>
-</a>
+    <a href="products.php" class="card items">
+        <h3>Total Items</h3>
+        <div class="value"><?= number_format($summary['total_items'] ?? 0) ?></div>
+        <div class="label">In inventory</div>
+    </a>
 
-<a href="products.php" class="card items">
-<h3>Total Items</h3>
-<div class="value"><?= $summary['total_items'] ?? 0 ?></div>
-</a>
-
-<!-- Expiring Soon Card - Now Clickable -->
-<div class="card expire" onclick="showExpiringProducts(<?= htmlspecialchars($expiringProductsJson) ?>)" style="cursor: pointer;">
-<h3>⚠️ Expiring Soon (60 days)</h3>
-<div class="value"><?= $expiringSoon ?? 0 ?></div>
-<div style="font-size: 12px; color: #666; margin-top: 5px;">Click to view details</div>
+    <div class="card expire" onclick="showExpiringProducts(<?= htmlspecialchars($expiringProductsJson) ?>)">
+        <h3>Expiring Soon</h3>
+        <div class="value"><?= $expiringSoon ?? 0 ?></div>
+        <div class="label">Within 60 days</div>
+    </div>
 </div>
 
-</div>
-
-<!-- ================= CHARTS ================= -->
-
+<!-- Charts -->
 <div class="section">
-<h3>Inventory Analytics</h3>
-
-<div class="charts">
-
-<div class="chart-box">
-<canvas id="stockChart"></canvas>
+    <h3>Inventory Analytics</h3>
+    <div class="charts">
+        <div class="chart-box">
+            <canvas id="stockChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
 </div>
 
-<div class="chart-box">
-<canvas id="categoryChart"></canvas>
-</div>
-
-</div>
-</div>
-
-<!-- ================= RECENT ================= -->
-
+<!-- Recent Movements -->
 <div class="section">
-<h3>Recent Stock Movements</h3>
+    <h3>Recent Stock Movements</h3>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $recent = $db->query("
+                    SELECT p.name as product_name, sm.type, sm.quantity, sm.created_at
+                    FROM stock_movements sm
+                    JOIN products p ON sm.product_id = p.id
+                    ORDER BY sm.created_at DESC
+                    LIMIT 5
+                ")->fetchAll(PDO::FETCH_ASSOC);
 
-<table>
-<tr>
-<th>Product ID</th>
-<th>Type</th>
-<th>Quantity</th>
-<th>Date</th>
-</tr>
-
-<?php
-$recent = $db->query("
-SELECT product_id,type,quantity,created_at
-FROM stock_movements
-ORDER BY created_at DESC
-LIMIT 5
-")->fetchAll(PDO::FETCH_ASSOC);
-
-if(count($recent)>0):
-foreach($recent as $r):
-?>
-
-<tr>
-<td><?= $r['product_id'] ?></td>
-<td><?= $r['type'] ?></td>
-<td><?= $r['quantity'] ?></td>
-<td><?= $r['created_at'] ?></td>
-</tr>
-
-<?php endforeach; else: ?>
-
-<tr>
-<td colspan="4">No recent activity.</td>
-</tr>
-
-<?php endif; ?>
-
-</table>
+                if(count($recent) > 0):
+                    foreach($recent as $r):
+                ?>
+                <tr>
+                    <td><?= htmlspecialchars($r['product_name']) ?></td>
+                    <td>
+                        <span class="type-badge <?= strtolower($r['type']) ?>">
+                            <?= $r['type'] ?>
+                        </span>
+                    </td>
+                    <td><?= $r['quantity'] ?></td>
+                    <td><?= date('M d, H:i', strtotime($r['created_at'])) ?></td>
+                </tr>
+                <?php endforeach; else: ?>
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">
+                        No recent activity
+                    </td>
+                </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 </div>
 </div>
 
-<!-- ================= EXPIRING PRODUCTS MODAL ================= -->
+<!-- Modal -->
 <div id="expiringModal" class="expiring-modal">
     <div class="expiring-modal-content">
         <div class="expiring-modal-header">
             <h2>Products Expiring Within 60 Days</h2>
             <span class="expiring-modal-close" onclick="closeExpiringModal()">&times;</span>
         </div>
-        <div id="expiringProductsList">
-            <!-- Products will be loaded here -->
-        </div>
+        <div id="expiringProductsList"></div>
     </div>
 </div>
 
-<!-- ================= SIDEBAR TOGGLE ================= -->
 <script>
+// Sidebar Toggle
 function toggleSidebar() {
     document.querySelector('.sidebar').classList.toggle('active');
+    document.querySelector('.overlay').classList.toggle('active');
 }
 
-/* Close sidebar when clicking outside (mobile UX) */
+// Close sidebar when clicking outside
 document.addEventListener("click", function (e) {
-
     const sidebar = document.querySelector(".sidebar");
     const btn = document.querySelector(".menu-toggle");
-
-    if (!sidebar.contains(e.target) && !btn.contains(e.target)) {
+    if (!sidebar.contains(e.target) && !btn?.contains(e.target)) {
         sidebar.classList.remove("active");
+        document.querySelector('.overlay')?.classList.remove('active');
     }
 });
 
-// ================= EXPIRING PRODUCTS MODAL FUNCTION =================
+// Expiring Products Modal
 function showExpiringProducts(products) {
-    console.log("Expiring products:", products); // Debug log
-    
     const modal = document.getElementById('expiringModal');
     const container = document.getElementById('expiringProductsList');
     
     if (!products || products.length === 0) {
-        container.innerHTML = '<p style="text-align:center; padding:20px; color:#666;">No products expiring within 60 days.</p>';
+        container.innerHTML = '<p style="text-align:center; padding:20px;">No products expiring within 60 days.</p>';
     } else {
-        let html = `
-            <table style="width:100%;">
-                <thead>
-                    <tr>
-                        <th>Product Name</th>
-                        <th>Category</th>
-                        <th>Batch</th>
-                        <th>Stock</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
+        let html = '<table style="width:100%"><thead><tr><th>Product</th><th>Category</th><th>Batch</th><th>Stock</th><th>Status</th><th></th></tr></thead><tbody>';
         
         products.forEach(product => {
-            const today = new Date();
-            const expDate = new Date(product.expiry_date);
-            const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-            
-            let statusClass = '';
-            let statusText = '';
-            
-            if (daysLeft <= 30) {
-                statusClass = 'expiring-badge warning-30';
-                statusText = `${daysLeft} days left (Urgent)`;
-            } else {
-                statusClass = 'expiring-badge warning-60';
-                statusText = `${daysLeft} days left`;
-            }
+            const daysLeft = Math.ceil((new Date(product.expiry_date) - new Date()) / (1000 * 60 * 60 * 24));
+            const statusClass = daysLeft <= 30 ? 'warning-30' : 'warning-60';
+            const statusText = daysLeft <= 30 ? `${daysLeft} days (Urgent)` : `${daysLeft} days`;
             
             html += `
                 <tr>
@@ -604,10 +579,8 @@ function showExpiringProducts(products) {
                     <td>${product.category_name || 'N/A'}</td>
                     <td>${product.expiry_date}</td>
                     <td>${product.batch_stock}</td>
-                    <td><span class="${statusClass}">${statusText}</span></td>
-                    <td>
-                        <a href="products.php?batch=${product.expiry_date}&id=${product.id}" style="text-decoration:none; color:#3498db;" title="View in Products">👁️ View</a>
-                    </td>
+                    <td><span class="expiring-badge ${statusClass}">${statusText}</span></td>
+                    <td><a href="products.php?batch=${product.expiry_date}&id=${product.id}" style="color:#3b82f6;">View</a></td>
                 </tr>
             `;
         });
@@ -626,30 +599,14 @@ function closeExpiringModal() {
 // Close modal when clicking outside
 window.addEventListener('click', function(event) {
     const modal = document.getElementById('expiringModal');
-    if (event.target === modal) {
-        closeExpiringModal();
-    }
+    if (event.target === modal) closeExpiringModal();
 });
-</script>
 
+// Charts
+const colors = { green: '#10b981', orange: '#f59e0b', red: '#ef4444', blue: '#3b82f6' };
 
-<!-- ================= DASHBOARD COLORS ================= -->
-<script>
-const dashboardColors = {
-    blue: '#3498db',
-    orange: '#f39c12',
-    red: '#e74c3c',
-    green: '#2ecc71',
-    purple: '#9b59b6'
-};
-</script>
-
-
-<!-- ================= CHARTS ================= -->
-<script>
-
-/* ================= STOCK STATUS CHART ================= */
-new Chart(document.getElementById('stockChart'), {
+// Stock Status Chart with cool hover animation
+const stockChart = new Chart(document.getElementById('stockChart'), {
     type: 'doughnut',
     data: {
         labels: ['Healthy Stock', 'Low Stock', 'Out of Stock'],
@@ -659,81 +616,127 @@ new Chart(document.getElementById('stockChart'), {
                 <?= $summary['low_stock'] ?? 0 ?>,
                 <?= $summary['out_stock'] ?? 0 ?>
             ],
-            backgroundColor: [
-                dashboardColors.green,
-                dashboardColors.orange,
-                dashboardColors.red
-            ],
+            backgroundColor: [colors.green, colors.orange, colors.red],
             borderWidth: 0,
-            hoverOffset: 12
-        }]
-    },
-    options: {
-        maintainAspectRatio: false,
-        cutout: '65%',
-        animation: {
-            animateRotate: true,
-            duration: 900
-        },
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    padding: 18,
-                    usePointStyle: true,
-                    font: {
-                        size: 12
-                    }
-                }
-            }
-        }
-    }
-});
-
-
-/* ================= CATEGORY BAR CHART ================= */
-new Chart(document.getElementById('categoryChart'), {
-    type: 'bar',
-    data: {
-        labels: <?= json_encode($categoryLabels) ?>,
-        datasets: [{
-            label: 'Products',
-            data: <?= json_encode($categoryTotals) ?>,
-            borderRadius: 8,
-            borderSkipped: false,
-            backgroundColor: dashboardColors.blue
+            hoverOffset: 25,
+            hoverBorderColor: 'white',
+            hoverBorderWidth: 3,
         }]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
+        cutout: '65%',
         animation: {
-            duration: 900
+            animateScale: true,
+            animateRotate: true,
+            duration: 1000,
+            easing: 'easeInOutQuart'
         },
         plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    precision: 0
-                },
-                grid: {
-                    drawBorder: false
+            legend: { 
+                position: 'bottom',
+                labels: {
+                    padding: 15,
+                    usePointStyle: true,
+                    font: { size: 11, weight: '500' }
                 }
             },
-            x: {
-                grid: {
-                    display: false
+            tooltip: {
+                backgroundColor: '#1e293b',
+                titleColor: '#fff',
+                bodyColor: '#cbd5e1',
+                padding: 12,
+                cornerRadius: 8,
+                displayColors: true,
+                borderColor: '#3b82f6',
+                borderWidth: 1,
+                callbacks: {
+                    label: function(context) {
+                        const label = context.label || '';
+                        const value = context.raw || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                        return `${label}: ${value} units (${percentage}%)`;
+                    }
                 }
+            }
+        },
+        hover: {
+            mode: 'nearest',
+            intersect: true,
+            animationDuration: 400
+        },
+        elements: {
+            arc: {
+                borderWidth: 0,
+                hoverBorderWidth: 3,
+                hoverBorderColor: '#ffffff',
+                hoverOffset: 15
             }
         }
     }
 });
 
+// Category Bar Chart
+new Chart(document.getElementById('categoryChart'), {
+    type: 'bar',
+    data: {
+        labels: <?= json_encode($categoryLabels) ?>,
+        datasets: [{
+            label: 'Stock Quantity',
+            data: <?= json_encode($categoryTotals) ?>,
+            backgroundColor: colors.blue,
+            borderRadius: 6,
+            hoverBackgroundColor: '#2563eb',
+            barPercentage: 0.6
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { 
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#1e293b',
+                titleColor: '#fff',
+                bodyColor: '#cbd5e1',
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: {
+                    label: function(context) {
+                        return `Quantity: ${context.raw.toLocaleString()} units`;
+                    }
+                }
+            }
+        },
+        scales: { 
+            y: { 
+                beginAtZero: true, 
+                grid: { color: '#eef2f6' },
+                ticks: { font: { size: 10 } }
+            },
+            x: { 
+                grid: { display: false },
+                ticks: { font: { size: 10 } }
+            }
+        },
+        hover: {
+            mode: 'index',
+            intersect: false,
+            animationDuration: 300
+        }
+    }
+});
+
+// Add cool glow effect when hovering over the pie chart container
+document.querySelector('.chart-box:first-child').addEventListener('mouseenter', function() {
+    this.style.transition = 'all 0.3s ease';
+});
+
+document.querySelector('.chart-box:first-child').addEventListener('mouseleave', function() {
+    this.style.transition = 'all 0.3s ease';
+});
 </script>
 
 </body>

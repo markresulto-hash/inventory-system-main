@@ -10,6 +10,7 @@ $db = Database::connect();
 
 $search = trim($_GET['search'] ?? '');
 $categoryFilter = $_GET['category'] ?? '';
+$stockFilter = $_GET['stock'] ?? ''; // New: low, out, or empty
 $page = (isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0)
         ? (int)$_GET['page']
         : 1;
@@ -34,6 +35,45 @@ if ($search !== '') {
 if ($categoryFilter !== '' && is_numeric($categoryFilter)) {
     $whereConditions[] = "p.category_id = :category";
     $params[':category'] = (int)$categoryFilter;
+}
+
+/* STOCK FILTER - New functionality */
+if ($stockFilter === 'low') {
+    // Products with stock > 0 but <= min_stock
+    $whereConditions[] = "(
+        SELECT COALESCE(SUM(
+            CASE
+                WHEN type='IN' THEN quantity
+                WHEN type='OUT' THEN -quantity
+                ELSE 0
+            END
+        ), 0)
+        FROM stock_movements
+        WHERE product_id = p.id
+    ) > 0 AND (
+        SELECT COALESCE(SUM(
+            CASE
+                WHEN type='IN' THEN quantity
+                WHEN type='OUT' THEN -quantity
+                ELSE 0
+            END
+        ), 0)
+        FROM stock_movements
+        WHERE product_id = p.id
+    ) <= p.min_stock";
+} elseif ($stockFilter === 'out') {
+    // Products with stock <= 0
+    $whereConditions[] = "(
+        SELECT COALESCE(SUM(
+            CASE
+                WHEN type='IN' THEN quantity
+                WHEN type='OUT' THEN -quantity
+                ELSE 0
+            END
+        ), 0)
+        FROM stock_movements
+        WHERE product_id = p.id
+    ) <= 0";
 }
 
 // Create the WHERE clause string
@@ -232,7 +272,37 @@ error_log("Found " . count($categories) . " categories");
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
-/* Your existing styles */
+/* Your existing styles plus new filter indicators */
+.active-filter {
+    background-color: #007bff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 10px;
+    font-size: 12px;
+}
+
+.filter-badge {
+    display: inline-block;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    padding: 5px 10px;
+    margin-right: 10px;
+    font-size: 13px;
+}
+
+.filter-badge .remove {
+    margin-left: 5px;
+    color: #999;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.filter-badge .remove:hover {
+    color: #ff0000;
+}
+
+/* The rest of your existing styles remain exactly the same */
 .confirm-modal {
     display: none;
     position: fixed;
@@ -531,12 +601,24 @@ error_log("Found " . count($categories) . " categories");
         <div class="main">
             <button class="menu-toggle" onclick="toggleSidebar()">☰ Menu</button>
 
-            <h1>Products</h1>
+            <h1>Products
+                <?php if ($stockFilter === 'low'): ?>
+                    <span class="active-filter">Low Stock Only</span>
+                <?php elseif ($stockFilter === 'out'): ?>
+                    <span class="active-filter">Out of Stock Only</span>
+                <?php endif; ?>
+            </h1>
 
             <div class="card-container">
-                <div class="card">Total Products<br><b><?= number_format($summary['total_products'] ?? 0) ?></b></div>
-                <div class="card">Low Stock<br><b><?= number_format($summary['low_stock'] ?? 0) ?></b></div>
-                <div class="card">Out of Stock<br><b><?= number_format($summary['out_stock'] ?? 0) ?></b></div>
+                <a href="products.php" style="text-decoration: none; color: inherit;">
+                    <div class="card">Total Products<br><b><?= number_format($summary['total_products'] ?? 0) ?></b></div>
+                </a>
+                <a href="products.php?stock=low" style="text-decoration: none; color: inherit;">
+                    <div class="card">Low Stock<br><b><?= number_format($summary['low_stock'] ?? 0) ?></b></div>
+                </a>
+                <a href="products.php?stock=out" style="text-decoration: none; color: inherit;">
+                    <div class="card">Out of Stock<br><b><?= number_format($summary['out_stock'] ?? 0) ?></b></div>
+                </a>
                 <div class="card">Total Items<br><b><?= number_format($summary['total_items'] ?? 0) ?></b></div>
             </div>
 
@@ -544,7 +626,39 @@ error_log("Found " . count($categories) . " categories");
 
             <br><br>
 
+            <!-- Active filters display -->
+            <?php if ($stockFilter !== '' || $search !== '' || $categoryFilter !== ''): ?>
+            <div style="margin-bottom: 15px;">
+                <span style="font-weight: bold; margin-right: 10px;">Active Filters:</span>
+                <?php if ($stockFilter === 'low'): ?>
+                <span class="filter-badge">Low Stock <a href="?<?= http_build_query(array_merge($_GET, ['stock' => '', 'page' => 1])) ?>" class="remove" title="Remove filter">✕</a></span>
+                <?php elseif ($stockFilter === 'out'): ?>
+                <span class="filter-badge">Out of Stock <a href="?<?= http_build_query(array_merge($_GET, ['stock' => '', 'page' => 1])) ?>" class="remove" title="Remove filter">✕</a></span>
+                <?php endif; ?>
+                <?php if ($search !== ''): ?>
+                <span class="filter-badge">Search: "<?= htmlspecialchars($search) ?>" <a href="?<?= http_build_query(array_merge($_GET, ['search' => '', 'page' => 1])) ?>" class="remove" title="Remove filter">✕</a></span>
+                <?php endif; ?>
+                <?php if ($categoryFilter !== ''): 
+                    $catName = '';
+                    foreach($categories as $cat) {
+                        if ($cat['id'] == $categoryFilter) {
+                            $catName = $cat['name'];
+                            break;
+                        }
+                    }
+                ?>
+                <span class="filter-badge">Category: <?= htmlspecialchars($catName) ?> <a href="?<?= http_build_query(array_merge($_GET, ['category' => '', 'page' => 1])) ?>" class="remove" title="Remove filter">✕</a></span>
+                <?php endif; ?>
+                <a href="products.php" style="font-size: 13px; color: #007bff;">Clear all</a>
+            </div>
+            <?php endif; ?>
+
             <form id="filterForm" method="GET" style="margin-bottom:15px;">
+                <!-- Preserve stock filter in form -->
+                <?php if ($stockFilter !== ''): ?>
+                <input type="hidden" name="stock" value="<?= htmlspecialchars($stockFilter) ?>">
+                <?php endif; ?>
+                
                 <input type="text" id="searchInput" name="search" placeholder="Search product..."
                     value="<?= htmlspecialchars($search) ?>">
                 <select name="category">
@@ -557,6 +671,10 @@ error_log("Found " . count($categories) . " categories");
                     <?php endforeach; ?>
                 </select>
                 <button class="btn">Filter</button>
+                
+                <!-- Quick filter buttons -->
+                <a href="?stock=low<?= $search ? '&search='.urlencode($search) : '' ?><?= $categoryFilter ? '&category='.$categoryFilter : '' ?>" class="btn" style="background-color: <?= $stockFilter === 'low' ? '#007bff' : '#6c757d' ?>; color: white; text-decoration: none;">Low Stock</a>
+                <a href="?stock=out<?= $search ? '&search='.urlencode($search) : '' ?><?= $categoryFilter ? '&category='.$categoryFilter : '' ?>" class="btn" style="background-color: <?= $stockFilter === 'out' ? '#007bff' : '#6c757d' ?>; color: white; text-decoration: none;">Out of Stock</a>
             </form>
 
             <table>
@@ -635,14 +753,14 @@ error_log("Found " . count($categories) . " categories");
                                     <a href="#" class="action-btn" title="View Batches" 
                                        onclick="viewBatches(<?= $product['id'] ?>, '<?= htmlspecialchars(addslashes($product['name'])) ?>'); return false;">📋</a>
                                     <a href="#" class="action-btn" title="Edit" 
-                                       onclick="openEditModal(<?= $product['id'] ?>, '<?= htmlspecialchars(addslashes($product['name'])) ?>', <?= $product['category_id'] ?>, '<?= htmlspecialchars(addslashes($product['unit'])) ?>', <?= $product['min_stock'] ?>); return false;">✏️</a>
+                                       onclick="openEditModal(<?= $product['id'] ?>, '<?= htmlspecialchars(addslashes($product['name'])) ?>', <?= $product['category_id'] ?>, '<?= htmlspecialchars(addslashes($product['unit'])) ?>', <?= $product['min_stock'] ?>, <?= $product['has_expiry'] ?>); return false;">✏️</a>
                                     <a href="#" class="action-btn" title="Delete" 
                                        onclick="confirmDelete(<?= $product['id'] ?>, '<?= htmlspecialchars(addslashes($product['name'])) ?>'); return false;">🗑️</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <tr><td colspan="7" style="text-align:center; padding:20px;">No products found.</td></tr>
+                        <tr><td colspan="7" style="text-align:center; padding:20px;">No products found matching your filters.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -650,10 +768,16 @@ error_log("Found " . count($categories) . " categories");
             <?php
             $queryParams = [
                 'search' => $search,
-                'category' => $categoryFilter
+                'category' => $categoryFilter,
+                'stock' => $stockFilter
             ];
+            // Remove empty values
+            $queryParams = array_filter($queryParams, function($value) {
+                return $value !== '';
+            });
             ?>
 
+            <?php if($totalPages > 1): ?>
             <div id="pagination" class="pagination" style="margin-top:15px;">
                 <?php if($page > 1): ?>
                     <a href="?<?= http_build_query(array_merge($queryParams, ['page' => 1])) ?>#pagination">⏮</a>
@@ -674,10 +798,11 @@ error_log("Found " . count($categories) . " categories");
                     <a href="?<?= http_build_query(array_merge($queryParams, ['page' => $totalPages])) ?>#pagination">⏭</a>
                 <?php endif; ?>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 
-    <!-- MODALS - All modals remain the same -->
+    <!-- MODALS -->
     <div class="confirm-modal" id="confirmModal">
         <div class="confirm-content">
             <div class="confirm-header" id="confirmHeader">
@@ -724,12 +849,12 @@ error_log("Found " . count($categories) . " categories");
         </div>
     </div>
 
-    <!-- EDIT PRODUCT MODAL -->
+    <!-- EDIT PRODUCT MODAL - FIXED with method="POST" -->
     <div class="modal" id="editProductModal" style="display:none;">
         <div class="modal-content">
             <span class="modal-close" onclick="closeEditModal()">&times;</span>
             <h2>Edit Product</h2>
-            <form id="editProductForm">
+            <form id="editProductForm" method="POST">
                 <input type="hidden" name="id" id="edit_id">
                 <label>Product Name</label>
                 <input type="text" name="name" id="edit_name" required>
@@ -946,41 +1071,66 @@ error_log("Found " . count($categories) . " categories");
         });
     });
 
-    // ================= EDIT PRODUCT =================
-    function openEditModal(id, name, category, unit, min_stock) {
+    // ================= EDIT PRODUCT - FIXED =================
+    let isEditSubmitting = false;
+
+    function openEditModal(id, name, category, unit, min_stock, has_expiry) {
         document.getElementById('edit_id').value = id;
         document.getElementById('edit_name').value = name;
         document.getElementById('edit_category').value = category;
         document.getElementById('edit_unit').value = unit;
         document.getElementById('edit_min_stock').value = min_stock;
+        document.getElementById('edit_has_expiry').value = has_expiry;
         document.getElementById('editProductModal').style.display = 'block';
     }
 
     function closeEditModal() {
         document.getElementById('editProductModal').style.display = 'none';
+        document.getElementById('editProductForm').reset();
+        isEditSubmitting = false;
     }
 
     document.getElementById('editProductForm').addEventListener('submit', function(e){
         e.preventDefault();
-        showLoading('Updating...');
+        
+        if (isEditSubmitting) {
+            console.log('Already submitting edit...');
+            return;
+        }
+        
+        isEditSubmitting = true;
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Updating...';
+        submitBtn.disabled = true;
+        
+        showLoading('Updating product...');
+        
+        const formData = new FormData(this);
         
         fetch('../api/update_product.php', {
             method: 'POST',
-            body: new FormData(this)
+            body: formData
         })
         .then(res => res.json())
         .then(data => {
             if(data.status === 'success'){
-                showToast('Updated!', 'success', 2000);
+                showToast('Product updated successfully!', 'success', 2000);
                 setTimeout(() => location.reload(), 2000);
             } else {
                 hideLoading();
-                showToast(data.message || 'Error', 'error', 4000);
+                showToast(data.message || 'Error updating product', 'error', 4000);
+                isEditSubmitting = false;
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
             }
         })
-        .catch(() => {
+        .catch(err => {
             hideLoading();
-            showToast('Connection failed', 'error', 4000);
+            showToast('Connection failed: ' + err.message, 'error', 4000);
+            isEditSubmitting = false;
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
         });
     });
 
