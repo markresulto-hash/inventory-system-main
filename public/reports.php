@@ -258,6 +258,7 @@ $dashboardColors = [
 <html>
 <head>
     <title>Consumption Reports - OCSR Inventory System</title>
+    <link rel="icon" type="image/png" href="../img/sunset2.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">

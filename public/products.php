@@ -268,6 +268,7 @@ error_log("Found " . count($categories) . " categories");
 <html>
 <head>
 <title>Products - Inventory System</title>
+<link rel="icon" type="image/png" href="../img/sunset2.png">
 <link rel="stylesheet" href="assets/css/products.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="assets/css/style.css">

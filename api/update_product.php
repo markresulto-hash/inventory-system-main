@@ -29,7 +29,7 @@ if (!$id || !is_numeric($id)) {
     exit;
 }
 
-if (empty($name) || empty($category_id) || empty($unit) || empty($min_stock)) {
+if (empty($name) || empty($category_id) || empty($unit) || $min_stock === '') {
     echo json_encode(['status' => 'error', 'message' => 'All fields are required']);
     exit;
 }
@@ -37,8 +37,13 @@ if (empty($name) || empty($category_id) || empty($unit) || empty($min_stock)) {
 try {
     $db->beginTransaction();
     
-    // Get old data for audit
-    $getStmt = $db->prepare("SELECT * FROM products WHERE id = ?");
+    // Get old data for audit including category name
+    $getStmt = $db->prepare("
+        SELECT p.*, c.name as category_name 
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = ?
+    ");
     $getStmt->execute([$id]);
     $oldData = $getStmt->fetch(PDO::FETCH_ASSOC);
     
@@ -47,6 +52,12 @@ try {
         echo json_encode(['status' => 'error', 'message' => 'Product not found']);
         exit;
     }
+    
+    // Get new category name for audit
+    $catStmt = $db->prepare("SELECT name FROM categories WHERE id = ?");
+    $catStmt->execute([$category_id]);
+    $newCategory = $catStmt->fetch(PDO::FETCH_ASSOC);
+    $newCategoryName = $newCategory ? $newCategory['name'] : '';
     
     // Update product
     $stmt = $db->prepare("
@@ -58,24 +69,27 @@ try {
     $result = $stmt->execute([$name, $category_id, $unit, $min_stock, $has_expiry, $id]);
     
     if ($result) {
-        // Log to product_audit table
+        // Prepare audit data with nested old and new structure
         $auditData = [
             'old' => [
                 'name' => $oldData['name'],
-                'category_id' => $oldData['category_id'],
+                'category_id' => (int)$oldData['category_id'],
+                'category_name' => $oldData['category_name'],
                 'unit' => $oldData['unit'],
-                'min_stock' => $oldData['min_stock'],
-                'has_expiry' => $oldData['has_expiry']
+                'min_stock' => (int)$oldData['min_stock'],
+                'has_expiry' => (int)$oldData['has_expiry']
             ],
             'new' => [
                 'name' => $name,
-                'category_id' => $category_id,
+                'category_id' => (int)$category_id,
+                'category_name' => $newCategoryName,
                 'unit' => $unit,
-                'min_stock' => $min_stock,
-                'has_expiry' => $has_expiry
+                'min_stock' => (int)$min_stock,
+                'has_expiry' => (int)$has_expiry
             ]
         ];
         
+        // Log to product_audit table - using the structure that matches your table
         $auditStmt = $db->prepare("
             INSERT INTO product_audit (product_id, action, old_data, staff_id, created_at) 
             VALUES (?, 'UPDATE', ?, ?, NOW())

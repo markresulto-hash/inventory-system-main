@@ -106,13 +106,14 @@ foreach ($stockParams as $key => $value) {
 
 /* ================================
    PRODUCT AUDIT QUERY (ADD/EDIT/DELETE)
+   FIXED: Properly extract from nested JSON structure
 ================================ */
 $productWhere = [];
 $productParams = [];
 
 /* SEARCH FILTER */
 if ($search !== '') {
-    $productWhere[] = "(pa.new_data LIKE :product_search OR pa.old_data LIKE :product_search OR staff.name LIKE :product_search)";
+    $productWhere[] = "(pa.old_data LIKE :product_search OR staff.name LIKE :product_search)";
     $productParams[':product_search'] = "%{$search}%";
 }
 
@@ -147,31 +148,41 @@ if ($dateTo !== '') {
 
 $productWhereSQL = !empty($productWhere) ? "WHERE " . implode(" AND ", $productWhere) : "";
 
+// FIXED: Properly extract from nested JSON structure
 $unionQueries[] = "
     SELECT 
         CONCAT('PA-', pa.id) as id,
         pa.product_id,
         COALESCE(
-            JSON_UNQUOTE(JSON_EXTRACT(pa.new_data, '$.name')),
-            JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.name')),
+            -- For ADD actions, get from new data in the nested structure
+            JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.new.name')),
+            -- For EDIT actions, get from new data in the nested structure
+            JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.new.name')),
+            -- For DELETE actions, get from old data in the nested structure
+            JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.old.name')),
+            -- Fallback
             'Unknown Product'
         ) as product_name,
         COALESCE(
-            JSON_UNQUOTE(JSON_EXTRACT(pa.new_data, '$.unit')),
-            JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.unit')),
+            JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.new.unit')),
+            JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.old.unit')),
             NULL
         ) as unit,
         COALESCE(
-            JSON_UNQUOTE(JSON_EXTRACT(pa.new_data, '$.category_name')),
-            JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.category_name')),
+            JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.new.category_name')),
+            JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.old.category_name')),
             NULL
         ) as category_name,
         pa.action as type,
         NULL as quantity,
         CASE 
-            WHEN pa.action = 'ADD' THEN CONCAT('Added product: ', JSON_UNQUOTE(JSON_EXTRACT(pa.new_data, '$.name')))
-            WHEN pa.action = 'EDIT' THEN CONCAT('Edited product: ', JSON_UNQUOTE(JSON_EXTRACT(pa.new_data, '$.name')))
-            WHEN pa.action = 'DELETE' THEN CONCAT('Deleted product: ', JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.name')))
+            WHEN pa.action = 'ADD' THEN 
+                CONCAT('Added product: ', JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.new.name')))
+            WHEN pa.action = 'EDIT' THEN 
+                CONCAT('Edited product: ', JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.new.name')), 
+                       ' (was: ', JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.old.name')), ')')
+            WHEN pa.action = 'DELETE' THEN 
+                CONCAT('Deleted product: ', JSON_UNQUOTE(JSON_EXTRACT(pa.old_data, '$.old.name')))
             ELSE pa.action
         END as note,
         NULL as reason,
@@ -332,6 +343,7 @@ $filterContainerId = 'filter-section';
 <html>
 <head>
 <title>Audit Trail - Inventory System</title>
+<link rel="icon" type="image/png" href="../img/sunset2.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
