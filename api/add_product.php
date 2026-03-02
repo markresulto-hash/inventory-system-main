@@ -49,12 +49,11 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         exit;
     }
     
-    // Validate file size (max 2MB)
-    if ($file['size'] > 2 * 1024 * 1024) {
-        echo json_encode(['status' => 'error', 'message' => 'File too large. Maximum size is 2MB.']);
-        exit;
-    }
-    
+    // Validate file size (max 10MB)
+if ($file['size'] > 10 * 1024 * 1024) {
+    echo json_encode(['status' => 'error', 'message' => 'File too large. Maximum size is 10MB.']);
+    exit;
+}
     // Generate unique filename
     $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
     $filename = uniqid() . '_' . time() . '.' . $extension;

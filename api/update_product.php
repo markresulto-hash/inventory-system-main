@@ -41,52 +41,10 @@ if (empty($name) || empty($category_id) || empty($unit) || $min_stock === '') {
     exit;
 }
 
-// Handle image upload
-$imagePath = $current_image; // Keep old image by default
-
-if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-    $file = $_FILES['image'];
-    
-    // Validate file type
-    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_file($fileInfo, $file['tmp_name']);
-    finfo_close($fileInfo);
-    
-    if (!in_array($mimeType, $allowedTypes)) {
-        echo json_encode(['status' => 'error', 'message' => 'Invalid file type. Only JPG, PNG, GIF and WEBP are allowed.']);
-        exit;
-    }
-    
-    // Validate file size (max 2MB)
-    if ($file['size'] > 2 * 1024 * 1024) {
-        echo json_encode(['status' => 'error', 'message' => 'File too large. Maximum size is 2MB.']);
-        exit;
-    }
-    
-    // Generate unique filename
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $filename = uniqid() . '_' . time() . '.' . $extension;
-    $uploadPath = $uploadDir . $filename;
-    
-    // Move uploaded file
-    if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
-        $imagePath = 'uploads/products/' . $filename;
-        
-        // Delete old image if it exists and is not the default
-        if (!empty($current_image) && $current_image !== 'uploads/products/' && file_exists(__DIR__ . '/../' . $current_image)) {
-            unlink(__DIR__ . '/../' . $current_image);
-        }
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'Failed to upload image.']);
-        exit;
-    }
-}
-
 try {
     $db->beginTransaction();
     
-    // Get old data for audit including category name
+    // Get old data for audit including category name and image path
     $getStmt = $db->prepare("
         SELECT p.*, c.name as category_name 
         FROM products p
@@ -107,6 +65,61 @@ try {
     $catStmt->execute([$category_id]);
     $newCategory = $catStmt->fetch(PDO::FETCH_ASSOC);
     $newCategoryName = $newCategory ? $newCategory['name'] : '';
+    
+    // Handle image upload
+    $imagePath = $current_image; // Keep old image by default
+    $oldImageDeleted = false;
+    $oldImagePath = $oldData['image_path']; // Store the old image path from database
+
+    if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['image'];
+        
+        // Validate file type
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($fileInfo, $file['tmp_name']);
+        finfo_close($fileInfo);
+        
+        if (!in_array($mimeType, $allowedTypes)) {
+            $db->rollBack();
+            echo json_encode(['status' => 'error', 'message' => 'Invalid file type. Only JPG, PNG, GIF and WEBP are allowed.']);
+            exit;
+        }
+        
+        // Validate file size (max 10MB)
+        if ($file['size'] > 10 * 1024 * 1024) {
+            $db->rollBack();
+            echo json_encode(['status' => 'error', 'message' => 'File too large. Maximum size is 10MB.']);
+            exit;
+        }
+        
+        // Generate unique filename
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = uniqid() . '_' . time() . '.' . $extension;
+        $uploadPath = $uploadDir . $filename;
+        
+        // Move uploaded file
+        if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+            $imagePath = 'uploads/products/' . $filename;
+            
+            // Delete old image if it exists and is not the default
+            if (!empty($oldImagePath) && 
+                strpos($oldImagePath, 'default-product.png') === false && 
+                file_exists(__DIR__ . '/../' . $oldImagePath)) {
+                
+                if (unlink(__DIR__ . '/../' . $oldImagePath)) {
+                    $oldImageDeleted = true;
+                    error_log("Deleted old image: " . $oldImagePath . " for product ID: " . $id);
+                } else {
+                    error_log("Failed to delete old image: " . $oldImagePath . " for product ID: " . $id);
+                }
+            }
+        } else {
+            $db->rollBack();
+            echo json_encode(['status' => 'error', 'message' => 'Failed to upload image.']);
+            exit;
+        }
+    }
     
     // Update product with image path
     $stmt = $db->prepare("
@@ -137,7 +150,8 @@ try {
                 'min_stock' => (int)$min_stock,
                 'has_expiry' => (int)$has_expiry,
                 'image_path' => $imagePath
-            ]
+            ],
+            'image_replaced' => $oldImageDeleted
         ];
         
         // Log to product_audit table - using the structure that matches your table
@@ -148,7 +162,19 @@ try {
         $auditStmt->execute([$id, json_encode($auditData), $_SESSION['user_id']]);
         
         $db->commit();
-        echo json_encode(['status' => 'success', 'message' => 'Product updated successfully', 'image_path' => $imagePath]);
+        
+        // Prepare response message
+        $message = 'Product updated successfully';
+        if ($oldImageDeleted) {
+            $message .= ' and old image was deleted';
+        }
+        
+        echo json_encode([
+            'status' => 'success', 
+            'message' => $message,
+            'image_path' => '/inventory-system-main/' . $imagePath,
+            'old_image_deleted' => $oldImageDeleted
+        ]);
     } else {
         $db->rollBack();
         echo json_encode(['status' => 'error', 'message' => 'Failed to update product']);
