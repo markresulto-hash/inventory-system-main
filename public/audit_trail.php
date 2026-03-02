@@ -1,5 +1,17 @@
 <?php
-session_start(); // Add this at the very top
+session_start();
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: log_in.php");
+    exit();
+}
+
+// Add cache busting headers
+header("Cache-Control: no-cache, no-store, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+header("Expires: Wed, 11 Jan 1984 05:00:00 GMT");
+
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 require_once __DIR__ . '/../app/config/database.php';

@@ -20,12 +20,54 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Create upload directory if it doesn't exist
+$uploadDir = __DIR__ . '/../uploads/products/';
+if (!file_exists($uploadDir)) {
+    mkdir($uploadDir, 0777, true);
+}
+
 $name = trim($_POST['name'] ?? '');
 $category_id = $_POST['category_id'] ?? '';
 $unit = trim($_POST['unit'] ?? '');
 $min_stock = $_POST['min_stock'] ?? '';
 $has_expiry = isset($_POST['has_expiry']) ? (int)$_POST['has_expiry'] : 1;
 $staff_id = $_SESSION['user_id'];
+
+// Handle image upload
+$imagePath = null;
+if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+    $file = $_FILES['image'];
+    
+    // Validate file type
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($fileInfo, $file['tmp_name']);
+    finfo_close($fileInfo);
+    
+    if (!in_array($mimeType, $allowedTypes)) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid file type. Only JPG, PNG, GIF and WEBP are allowed.']);
+        exit;
+    }
+    
+    // Validate file size (max 2MB)
+    if ($file['size'] > 2 * 1024 * 1024) {
+        echo json_encode(['status' => 'error', 'message' => 'File too large. Maximum size is 2MB.']);
+        exit;
+    }
+    
+    // Generate unique filename
+    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $filename = uniqid() . '_' . time() . '.' . $extension;
+    $uploadPath = $uploadDir . $filename;
+    
+    // Move uploaded file
+    if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+        $imagePath = 'uploads/products/' . $filename;
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Failed to upload image.']);
+        exit;
+    }
+}
 
 // Validate required fields
 if (empty($name) || empty($category_id) || empty($unit) || $min_stock === '') {
@@ -51,10 +93,10 @@ try {
         exit;
     }
     
-    // Insert new product
-    $sql = "INSERT INTO products (name, category_id, unit, min_stock, has_expiry, is_active) VALUES (?, ?, ?, ?, ?, 1)";
+    // Insert new product with image path
+    $sql = "INSERT INTO products (name, category_id, unit, min_stock, has_expiry, image_path, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)";
     $stmt = $db->prepare($sql);
-    $result = $stmt->execute([$name, $category_id, $unit, $min_stock, $has_expiry]);
+    $result = $stmt->execute([$name, $category_id, $unit, $min_stock, $has_expiry, $imagePath]);
     
     if ($result) {
         $newId = $db->lastInsertId();
@@ -71,7 +113,8 @@ try {
             'category_name' => $categoryName,
             'unit' => $unit,
             'min_stock' => $min_stock,
-            'has_expiry' => $has_expiry
+            'has_expiry' => $has_expiry,
+            'image_path' => $imagePath
         ];
         
         $auditStmt = $db->prepare("
@@ -85,7 +128,8 @@ try {
         echo json_encode([
             'status' => 'success', 
             'message' => 'Product added successfully',
-            'id' => $newId
+            'id' => $newId,
+            'image_path' => $imagePath
         ]);
     } else {
         $db->rollBack();
@@ -98,3 +142,4 @@ try {
     error_log("Database error in add_product.php: " . $e->getMessage());
     echo json_encode(['status' => 'error', 'message' => 'Database error occurred']);
 }
+?>

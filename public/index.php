@@ -1,4 +1,16 @@
 <?php
+session_start();
+
+// Check if user is logged in
+if(!isset($_SESSION['user_id']) && !isset($_SESSION['logged_in'])) {
+    // Store the current page to redirect back after login
+    $_SESSION['redirect_url'] = $_SERVER['REQUEST_URI'];
+    
+    // Redirect to login page (adjust path based on your structure)
+    header("Location: log_in.php");
+    exit();
+}
+
 require_once '../app/config/database.php';
 $db = Database::connect();
 
