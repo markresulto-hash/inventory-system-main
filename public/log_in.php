@@ -60,10 +60,17 @@ if (isset($_SESSION['user_id'])) {
 // Handle login form submission
 $error = '';
 $show_popup = false;
+$submitted_username = '';
+$submitted_password = ''; // Add this variable to store the submitted password
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     $remember = isset($_POST['remember']);
+    
+    // Store the submitted username and password regardless of success/failure
+    $submitted_username = $username;
+    $submitted_password = $password;
     
     if (empty($username) || empty($password)) {
         $error = 'Please enter both username and password';
@@ -135,10 +142,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $error = 'Invalid username or password';
                 $show_popup = true;
+                // Keep both username and password for the form
             }
         } catch (PDOException $e) {
             $error = 'Database error: ' . $e->getMessage();
             $show_popup = true;
+            // Keep both username and password for the form
         }
     }
 }
@@ -183,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('/inventory-system-main/img/bg.jpg');
+            background-image: url('/inventory-system-main/img/bg.png');
             background-size: cover;
             background-position: center 100%;
             background-repeat: no-repeat;
@@ -191,11 +200,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             z-index: -1;
         }
 
+        /* ----- Welcome card (same glass style as login card) ----- */
+        .welcome-card {
+            background: linear-gradient(165deg, #667eea 0%, #764ba2 50%, #9f7aea 100%);
+            backdrop-filter: blur(2px) saturate(180%);
+            -webkit-backdrop-filter: blur(15px) saturate(180%);
+            border-radius: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.08);
+            padding: 2.5rem 2.8rem;
+            max-width: 580px;
+            width: 100%;
+            margin-right: 2rem;
+            transition: transform 0.25s ease;
+        }
+
         .welcome-message {
             color: white;
-            text-shadow: 0 4px 18px rgba(0, 40, 55, 0.9);
             max-width: 500px;
-            margin-right: 2rem;
             position: relative;
             z-index: 1;
         }
@@ -215,11 +237,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 1.4rem;
             border-left: 5px solid #ffffffd0;
             padding-left: 1.5rem;
-            text-shadow: 0 2px 10px #022f3a;
+            text-shadow: 0 2px 10px #202020;
+        }
+
+        /* Optional small detail to match login card's logo area vibe */
+        .welcome-footer {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1.5rem;
+            opacity: 0.6;
+            color: #ffffff;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 1.5rem;
         }
 
         .login-card {
-            background: #2a4b5e;
+            background: linear-gradient(165deg, #667eea 0%, #764ba2 50%, #9f7aea 100%);
             width: 100%;
             max-width: 480px;
             padding: 2rem 2.5rem;
@@ -250,13 +284,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 50%;
             background: #ffffff20;
             padding: 5px;
-            border: 2px solid #ffb347;
+            border: 2px solid #ffffff;
             transition: transform 0.2s;
         }
 
         .logo-container img:hover {
             transform: scale(1.08);
-            border-color: #ffa500;
+            border-color: #ffffff20;
         }
 
         h2 {
@@ -379,8 +413,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .input-field:focus {
-            border-color: #ffb347;
-            box-shadow: 0 0 0 4px #ffb34740;
+            border-color: #000000;
+            box-shadow: 0 0 0 4px #605d5840;
             background: #ffffff30;
         }
 
@@ -412,7 +446,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .toggle-password:hover {
-            color: #ffb347;
+            color: #000000;
         }
 
         .pw-options {
@@ -432,7 +466,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .remember-me input[type="checkbox"] {
-            accent-color: #ffb347;
+            accent-color: #000000;
             width: 1.1rem;
             height: 1.1rem;
             cursor: pointer;
@@ -440,20 +474,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .forgot-link {
             font-size: 0.9rem;
-            color: #ffd49f;
+            color: #ffffff;
             text-decoration: none;
             font-weight: 500;
-            border-bottom: 1px solid #ffb34780;
+            border-bottom: 1px solid #383735;
             padding-bottom: 1px;
         }
 
         .forgot-link:hover {
-            color: #ffb347;
-            border-bottom-color: #ffb347;
+            color: #000000;
+            border-bottom-color: #c3b8a9;
         }
 
         .login-btn {
-            background: #ff8c42;
+            background: #ffffff;
             border: none;
             width: 100%;
             padding: 1rem;
@@ -463,19 +497,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: white;
             letter-spacing: 0.5px;
             cursor: pointer;
-            box-shadow: 0 10px 20px -8px #7b3f00;
+            box-shadow: 0 10px 20px -8px #383735;
             transition: all 0.2s;
             text-transform: uppercase;
+            color: #000;
         }
 
         .login-btn:hover {
-            background: #ffa55c;
-            box-shadow: 0 16px 30px -8px #aa5500;
+            background: #7a7978;
+            box-shadow: 0 16px 30px -8px #383735;
             transform: translateY(-3px);
         }
 
         .login-btn:active {
-            background: #e6732e;
+            background: #383735;
             transform: translateY(2px);
             box-shadow: 0 5px 16px -4px #662200;
         }
@@ -488,10 +523,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 padding: 1.5rem;
                 overflow-y: auto;
             }
-            .welcome-message {
+            .welcome-card {
                 margin-right: 0;
+                max-width: 480px;
+            }
+            .welcome-message {
                 text-align: center;
-
+                margin-right: 0;
             }
             .welcome-message p {
                 border-left: none;
@@ -500,7 +538,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 padding-top: 0.8rem;
                 width: fit-content;
                 margin: 0 auto;
-
             }
             .login-card {
                 max-width: 100%;
@@ -526,9 +563,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <div class="welcome-message" >
-        <h1>WELCOME TO<br>OCSR INVENTORY</h1>
-        <p>system ready · please log in</p>
+    <!-- Welcome message now inside its own card (glass background, same as login card style) -->
+    <div class="welcome-card">
+        <div class="welcome-message">
+            <h1>WELCOME TO<br>OCSR INVENTORY</h1>
+            <p>system ready · please log in</p>
+        </div>
+        <!-- subtle footer to echo card completeness (optional) -->
+        <div class="welcome-footer">
+            <i class="fas fa-boxes"></i>
+            <i class="fas fa-shield-alt"></i>
+            <i class="fas fa-microchip"></i>
+            <span style="flex:1; text-align: right; font-weight: 200;">v1.0 · secure</span>
+        </div>
     </div>
 
     <div class="login-card" role="main">
@@ -544,7 +591,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="username">Username</label>
                 <input type="text" class="input-field" id="username" name="username" 
                        placeholder="Enter your username" autocomplete="username" 
-                       required value="<?= htmlspecialchars($_POST['username'] ?? '') ?>">
+                       required value="<?= htmlspecialchars($submitted_username) ?>">
             </div>
 
             <div class="input-group">
@@ -552,7 +599,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="password-container">
                     <input type="password" class="input-field" id="password" name="password" 
                            placeholder="Enter your password" autocomplete="current-password" 
-                           required>
+                           required value="<?= htmlspecialchars($submitted_password) ?>">
                     <i class="fas fa-eye toggle-password" id="togglePassword" onclick="togglePasswordVisibility()"></i>
                 </div>
             </div>
@@ -567,7 +614,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Add after the LOGIN button or before closing the form -->
             <div style="text-align: center; margin-top: 0; margin-bottom: 0.5rem;">
                 <span style="color: #e0eef5;">Don't have an account?</span> 
-                <a href="signup.php" style="color: #ffb347; text-decoration: none; font-weight: 600; border-bottom: 1px solid #ffb34780; padding-bottom: 1px;">Sign Up</a>
+                <a href="signup.php" style="color: #000000; text-decoration: none; font-weight: 600; border-bottom: 1px solid #383735; padding-bottom: 1px;">Sign Up</a>
             </div>  
 
             <button type="submit" class="login-btn">LOGIN</button>

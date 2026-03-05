@@ -1094,9 +1094,9 @@ body {
                     <span class="product-badge <?= $statusClass ?>"><?= $statusText ?></span>
                     
                     <img src="<?= htmlspecialchars($product['image_path']) ?>" 
-                         alt="<?= htmlspecialchars($product['name']) ?>" 
-                         class="product-image"
-                         onerror="this.src='/inventory-system-main/img/default-product.png'">
+     alt="<?= htmlspecialchars($product['name']) ?>" 
+     class="product-image"
+     onerror="this.onerror=null; this.src='/inventory-system-main/img/default-product.png';">
                     
                     <div class="product-info">
                         <h3 class="product-name"><?= htmlspecialchars($product['name']) ?></h3>

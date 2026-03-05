@@ -454,13 +454,13 @@ td {
         <div class="label">Active products</div>
     </a>
 
-    <a href="products.php?filter=low_stock" class="card low">
+    <a href="products.php?stock=low" class="card low">
         <h3>Low Stock</h3>
         <div class="value"><?= $summary['low_stock'] ?? 0 ?></div>
         <div class="label">Need attention</div>
     </a>
 
-    <a href="products.php?filter=out_stock" class="card out">
+    <a href="products.php?stock=out" class="card out">
         <h3>Out of Stock</h3>
         <div class="value"><?= $summary['out_stock'] ?? 0 ?></div>
         <div class="label">Require restock</div>

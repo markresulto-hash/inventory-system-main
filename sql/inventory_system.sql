@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 02, 2026 at 02:52 AM
+-- Generation Time: Mar 04, 2026 at 01:59 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -110,17 +110,18 @@ CREATE TABLE `products` (
 
 INSERT INTO `products` (`id`, `name`, `category_id`, `unit`, `min_stock`, `created_at`, `is_active`, `expiry_date`, `has_expiry`, `image_path`) VALUES
 (1, 'fita', 2, 'piece', 10, '2026-02-24 07:56:17', 0, NULL, 1, NULL),
-(2, 'tissue', 3, 'pack', 10, '2026-02-24 07:56:34', 1, NULL, 0, 'uploads/products/69a4ed21dad59_1772416289.jpg'),
-(3, 'medical gloves', 4, 'piece', 10, '2026-02-24 07:56:57', 1, NULL, 0, NULL),
+(2, 'tissue', 3, 'pack', 10, '2026-02-24 07:56:34', 1, NULL, 0, 'uploads/products/69a4f2fd191b2_1772417789.jpg'),
+(3, 'medical gloves', 4, 'piece', 10, '2026-02-24 07:56:57', 1, NULL, 0, 'uploads/products/69a4f71fe2dbd_1772418847.jpg'),
 (4, 'diapers', 3, 'piece', 30, '2026-02-24 08:16:29', 0, NULL, 0, NULL),
-(5, 'rice sack', 2, 'kilogram', 50, '2026-02-24 08:17:05', 1, NULL, 1, NULL),
+(5, 'rice sack', 2, 'kilogram', 50, '2026-02-24 08:17:05', 1, NULL, 1, 'uploads/products/69a4f77e183b3_1772418942.jpg'),
 (6, 'hansel', 3, 'pack', 40, '2026-02-25 03:49:39', 0, NULL, 1, NULL),
-(7, 'milo', 8, 'piece', 50, '2026-02-25 03:57:29', 1, NULL, 1, NULL),
+(7, 'milo', 8, 'piece', 50, '2026-02-25 03:57:29', 1, NULL, 1, 'uploads/products/69a4f7a36caea_1772418979.webp'),
 (8, 'water botttles', 2, 'bottle', 60, '2026-02-25 04:08:37', 0, NULL, 1, NULL),
-(9, 'Wipes', 3, 'pack', 20, '2026-02-25 07:29:31', 1, NULL, 0, NULL),
-(10, 'HANSEL', 2, 'pack', 100, '2026-02-25 07:35:25', 1, NULL, 1, 'uploads/products/69a4eaab6ded2_1772415659.jpg'),
-(11, 'water bottle', 2, 'piece', 30, '2026-03-02 01:19:50', 1, NULL, 1, NULL),
-(12, 'boa', 2, 'piece', 1, '2026-03-02 01:32:38', 1, NULL, 0, 'uploads/products/69a4e8b6486a7_1772415158.jpg');
+(9, 'Baby Wipes', 3, 'pack', 20, '2026-02-25 07:29:31', 1, NULL, 0, 'uploads/products/69a4f67ed73a4_1772418686.jpg'),
+(10, 'HANSEL', 2, 'pack', 100, '2026-02-25 07:35:25', 1, NULL, 1, 'uploads/products/69a4f014288e5_1772417044.jpg'),
+(11, 'Evian water bottle', 2, 'piece', 30, '2026-03-02 01:19:50', 1, NULL, 1, 'uploads/products/69a4eed185488_1772416721.jpg'),
+(12, 'boa', 2, 'piece', 1, '2026-03-02 01:32:38', 1, NULL, 0, 'uploads/products/69a4e8b6486a7_1772415158.jpg'),
+(13, 'Sunset', 5, 'pcs', 10, '2026-03-02 06:42:45', 1, NULL, 1, 'uploads/products/69a531a316115_1772433827.png');
 
 -- --------------------------------------------------------
 
@@ -161,7 +162,18 @@ INSERT INTO `product_audit` (`id`, `product_id`, `action`, `old_data`, `new_data
 (16, 12, 'ADD', NULL, '{\"name\":\"boa\",\"category_id\":\"2\",\"category_name\":\"Food\",\"unit\":\"piece\",\"min_stock\":\"1\",\"has_expiry\":0,\"image_path\":\"uploads\\/products\\/69a4e8b6486a7_1772415158.jpg\"}', 1, '2026-03-02 01:32:38'),
 (17, 10, 'UPDATE', '{\"old\":{\"name\":\"HANSEL\",\"category_id\":2,\"category_name\":\"Food\",\"unit\":\"pack\",\"min_stock\":100,\"has_expiry\":1,\"image_path\":\"uploads\\/products\\/69a4e7f82bc33_1772414968.jpg\"},\"new\":{\"name\":\"HANSEL\",\"category_id\":2,\"category_name\":\"Food\",\"unit\":\"pack\",\"min_stock\":100,\"has_expiry\":1,\"image_path\":\"uploads\\/products\\/69a4eaab6ded2_1772415659.jpg\"}}', NULL, 1, '2026-03-02 01:40:59'),
 (18, 8, 'DELETE', '{\"name\":\"water botttles\",\"category_id\":2,\"category_name\":\"Food\",\"unit\":\"bottle\",\"min_stock\":60,\"has_expiry\":1}', NULL, 1, '2026-03-02 01:44:13'),
-(19, 2, 'UPDATE', '{\"old\":{\"name\":\"tissue\",\"category_id\":3,\"category_name\":\"Hygiene\",\"unit\":\"pack\",\"min_stock\":10,\"has_expiry\":0,\"image_path\":null},\"new\":{\"name\":\"tissue\",\"category_id\":3,\"category_name\":\"Hygiene\",\"unit\":\"pack\",\"min_stock\":10,\"has_expiry\":0,\"image_path\":\"uploads\\/products\\/69a4ed21dad59_1772416289.jpg\"}}', NULL, 1, '2026-03-02 01:51:29');
+(19, 2, 'UPDATE', '{\"old\":{\"name\":\"tissue\",\"category_id\":3,\"category_name\":\"Hygiene\",\"unit\":\"pack\",\"min_stock\":10,\"has_expiry\":0,\"image_path\":null},\"new\":{\"name\":\"tissue\",\"category_id\":3,\"category_name\":\"Hygiene\",\"unit\":\"pack\",\"min_stock\":10,\"has_expiry\":0,\"image_path\":\"uploads\\/products\\/69a4ed21dad59_1772416289.jpg\"}}', NULL, 1, '2026-03-02 01:51:29'),
+(20, 11, 'UPDATE', '{\"old\":{\"name\":\"water bottle\",\"category_id\":2,\"category_name\":\"Food\",\"unit\":\"piece\",\"min_stock\":30,\"has_expiry\":1,\"image_path\":null},\"new\":{\"name\":\"Evian water bottle\",\"category_id\":2,\"category_name\":\"Food\",\"unit\":\"piece\",\"min_stock\":30,\"has_expiry\":1,\"image_path\":\"uploads\\/products\\/69a4eed185488_1772416721.jpg\"}}', NULL, 1, '2026-03-02 01:58:41'),
+(21, 10, 'UPDATE', '{\"old\":{\"name\":\"HANSEL\",\"category_id\":2,\"category_name\":\"Food\",\"unit\":\"pack\",\"min_stock\":100,\"has_expiry\":1,\"image_path\":\"uploads\\/products\\/69a4eaab6ded2_1772415659.jpg\"},\"new\":{\"name\":\"HANSEL\",\"category_id\":2,\"category_name\":\"Food\",\"unit\":\"pack\",\"min_stock\":100,\"has_expiry\":1,\"image_path\":\"uploads\\/products\\/69a4f014288e5_1772417044.jpg\"}}', NULL, 1, '2026-03-02 02:04:04'),
+(22, 2, 'UPDATE', '{\"old\":{\"name\":\"tissue\",\"category_id\":3,\"category_name\":\"Hygiene\",\"unit\":\"pack\",\"min_stock\":10,\"has_expiry\":0,\"image_path\":\"uploads\\/products\\/69a4ed21dad59_1772416289.jpg\"},\"new\":{\"name\":\"tissue\",\"category_id\":3,\"category_name\":\"Hygiene\",\"unit\":\"pack\",\"min_stock\":10,\"has_expiry\":0,\"image_path\":\"uploads\\/products\\/69a4f2e3ea805_1772417763.png\"},\"image_replaced\":true}', NULL, 1, '2026-03-02 02:16:03'),
+(23, 2, 'UPDATE', '{\"old\":{\"name\":\"tissue\",\"category_id\":3,\"category_name\":\"Hygiene\",\"unit\":\"pack\",\"min_stock\":10,\"has_expiry\":0,\"image_path\":\"uploads\\/products\\/69a4f2e3ea805_1772417763.png\"},\"new\":{\"name\":\"tissue\",\"category_id\":3,\"category_name\":\"Hygiene\",\"unit\":\"pack\",\"min_stock\":10,\"has_expiry\":0,\"image_path\":\"uploads\\/products\\/69a4f2fd191b2_1772417789.jpg\"},\"image_replaced\":true}', NULL, 1, '2026-03-02 02:16:29'),
+(24, 9, 'UPDATE', '{\"old\":{\"name\":\"Wipes\",\"category_id\":3,\"category_name\":\"Hygiene\",\"unit\":\"pack\",\"min_stock\":20,\"has_expiry\":0,\"image_path\":null},\"new\":{\"name\":\"Baby Wipes\",\"category_id\":3,\"category_name\":\"Hygiene\",\"unit\":\"pack\",\"min_stock\":20,\"has_expiry\":0,\"image_path\":\"uploads\\/products\\/69a4f67ed73a4_1772418686.jpg\"},\"image_replaced\":false}', NULL, 1, '2026-03-02 02:31:26'),
+(25, 3, 'UPDATE', '{\"old\":{\"name\":\"medical gloves\",\"category_id\":4,\"category_name\":\"Medical Supplies\",\"unit\":\"piece\",\"min_stock\":10,\"has_expiry\":0,\"image_path\":null},\"new\":{\"name\":\"medical gloves\",\"category_id\":4,\"category_name\":\"Medical Supplies\",\"unit\":\"piece\",\"min_stock\":10,\"has_expiry\":0,\"image_path\":\"uploads\\/products\\/69a4f71fe2dbd_1772418847.jpg\"},\"image_replaced\":false}', NULL, 1, '2026-03-02 02:34:07'),
+(26, 5, 'UPDATE', '{\"old\":{\"name\":\"rice sack\",\"category_id\":2,\"category_name\":\"Food\",\"unit\":\"kilogram\",\"min_stock\":50,\"has_expiry\":1,\"image_path\":null},\"new\":{\"name\":\"rice sack\",\"category_id\":2,\"category_name\":\"Food\",\"unit\":\"kilogram\",\"min_stock\":50,\"has_expiry\":1,\"image_path\":\"uploads\\/products\\/69a4f77e183b3_1772418942.jpg\"},\"image_replaced\":false}', NULL, 1, '2026-03-02 02:35:42'),
+(27, 7, 'UPDATE', '{\"old\":{\"name\":\"milo\",\"category_id\":8,\"category_name\":\"Snacks\",\"unit\":\"piece\",\"min_stock\":50,\"has_expiry\":1,\"image_path\":null},\"new\":{\"name\":\"milo\",\"category_id\":8,\"category_name\":\"Snacks\",\"unit\":\"piece\",\"min_stock\":50,\"has_expiry\":1,\"image_path\":\"uploads\\/products\\/69a4f7a36caea_1772418979.webp\"},\"image_replaced\":false}', NULL, 1, '2026-03-02 02:36:19'),
+(28, 13, 'ADD', NULL, '{\"name\":\"Sunset\",\"category_id\":\"5\",\"category_name\":\"Equipment\",\"unit\":\"pcs\",\"min_stock\":\"30\",\"has_expiry\":0,\"image_path\":\"uploads\\/products\\/69a53165563b2_1772433765.png\"}', 1, '2026-03-02 06:42:45'),
+(29, 13, 'UPDATE', '{\"old\":{\"name\":\"Sunset\",\"category_id\":5,\"category_name\":\"Equipment\",\"unit\":\"pcs\",\"min_stock\":30,\"has_expiry\":0,\"image_path\":\"uploads\\/products\\/69a53165563b2_1772433765.png\"},\"new\":{\"name\":\"Sunset\",\"category_id\":5,\"category_name\":\"Equipment\",\"unit\":\"pcs\",\"min_stock\":10,\"has_expiry\":1,\"image_path\":\"\\/inventory-system-main\\/uploads\\/products\\/69a53165563b2_1772433765.png\"},\"image_replaced\":false}', NULL, 1, '2026-03-02 06:43:17'),
+(30, 13, 'UPDATE', '{\"old\":{\"name\":\"Sunset\",\"category_id\":5,\"category_name\":\"Equipment\",\"unit\":\"pcs\",\"min_stock\":10,\"has_expiry\":1,\"image_path\":\"\\/inventory-system-main\\/uploads\\/products\\/69a53165563b2_1772433765.png\"},\"new\":{\"name\":\"Sunset\",\"category_id\":5,\"category_name\":\"Equipment\",\"unit\":\"pcs\",\"min_stock\":10,\"has_expiry\":1,\"image_path\":\"uploads\\/products\\/69a531a316115_1772433827.png\"},\"image_replaced\":false}', NULL, 1, '2026-03-02 06:43:47');
 
 -- --------------------------------------------------------
 
@@ -244,7 +256,9 @@ INSERT INTO `stock_movements` (`id`, `product_id`, `staff_id`, `supplier_id`, `t
 (26, 10, 1, NULL, 'OUT', 20, NULL, NULL, '2028-09-25', '2026-02-27 07:50:55'),
 (27, 10, 1, NULL, 'IN', 10, NULL, NULL, '2028-09-25', '2026-03-02 01:17:50'),
 (28, 10, 1, NULL, 'OUT', 10, NULL, NULL, '2028-09-25', '2026-03-02 01:18:02'),
-(29, 12, 1, NULL, 'IN', 1, 'one and only boa', NULL, NULL, '2026-03-02 01:43:50');
+(29, 12, 1, NULL, 'IN', 1, 'one and only boa', NULL, NULL, '2026-03-02 01:43:50'),
+(30, 10, 1, NULL, 'IN', 50, 'Donation', NULL, '2027-03-02', '2026-03-02 02:17:42'),
+(31, 13, 1, NULL, 'IN', 20, 'donation', NULL, '2027-04-01', '2026-03-02 06:44:20');
 
 -- --------------------------------------------------------
 
@@ -380,13 +394,13 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `product_audit`
 --
 ALTER TABLE `product_audit`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `residents`
@@ -404,7 +418,7 @@ ALTER TABLE `staff`
 -- AUTO_INCREMENT for table `stock_movements`
 --
 ALTER TABLE `stock_movements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT for table `suppliers`
