@@ -920,6 +920,25 @@ body {
         padding: 70px 15px 20px;
     }
 }
+
+/* Datalist styling */
+datalist {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+input[list]::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+input[list]:focus::-webkit-calendar-picker-indicator {
+    opacity: 1;
+}
 </style>
 </head>
 
@@ -1094,9 +1113,9 @@ body {
                     <span class="product-badge <?= $statusClass ?>"><?= $statusText ?></span>
                     
                     <img src="<?= htmlspecialchars($product['image_path']) ?>" 
-                alt="<?= htmlspecialchars($product['name']) ?>" 
-                class="product-image"
-                onerror="this.onerror=null; this.src='/inventory-system-main/img/default-product.png';">
+                         alt="<?= htmlspecialchars($product['name']) ?>" 
+                         class="product-image"
+                         onerror="this.onerror=null; this.src='/inventory-system-main/img/default-product.png';">
                     
                     <div class="product-info">
                         <h3 class="product-name"><?= htmlspecialchars($product['name']) ?></h3>
@@ -1224,7 +1243,20 @@ body {
                     
                     <div class="form-group">
                         <label>Unit</label>
-                        <input type="text" name="unit" placeholder="e.g., kg, pcs, box" required>
+                        <input type="text" name="unit" id="unit_input" list="unit_options" placeholder="Select or type unit" required>
+                        <datalist id="unit_options">
+                            <option value="pieces">Pieces</option>
+                            <option value="pack">Pack</option>
+                            <option value="kg">Kilogram (kg)</option>
+                            <option value="tub">Tub</option>
+                            <option value="bucket">Bucket</option>
+                            <option value="sack">Sack</option>
+                            <option value="canned">Canned</option>
+                            <option value="sachet">Sachet</option>
+                            <option value="gallons">Gallons</option>
+                            <option value="bottles">Bottles</option>
+                            <option value="bag">Bag</option>
+                        </datalist>
                     </div>
                 </div>
                 
@@ -1283,7 +1315,20 @@ body {
                     
                     <div class="form-group">
                         <label>Unit</label>
-                        <input type="text" name="unit" id="edit_unit" required>
+                        <input type="text" name="unit" id="edit_unit_input" list="edit_unit_options" placeholder="Select or type unit" required>
+                        <datalist id="edit_unit_options">
+                            <option value="pieces">Pieces</option>
+                            <option value="pack">Pack</option>
+                            <option value="kg">Kilogram (kg)</option>
+                            <option value="tub">Tub</option>
+                            <option value="bucket">Bucket</option>
+                            <option value="sack">Sack</option>
+                            <option value="canned">Canned</option>
+                            <option value="sachet">Sachet</option>
+                            <option value="gallons">Gallons</option>
+                            <option value="bottles">Bottles</option>
+                            <option value="bag">Bag</option>
+                        </datalist>
                     </div>
                 </div>
                 
@@ -1537,6 +1582,12 @@ body {
         
         if (isSubmitting) return;
         
+        const unitInput = document.getElementById('unit_input');
+        if (!unitInput.value.trim()) {
+            showToast('Please enter a unit', 'warning', 3000);
+            return;
+        }
+        
         isSubmitting = true;
         const formData = new FormData(this);
         
@@ -1550,10 +1601,11 @@ body {
         .then(data => {
             if (data.status === 'success') {
                 showToast('Product added successfully!', 'success', 3000);
-                // Reset the form but keep modal open
                 document.getElementById('addProductForm').reset();
                 document.getElementById('addPreview').src = '/inventory-system-main/img/default-product.png';
-                isSubmitting = false;
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
             } else {
                 hideLoading();
                 showToast(data.message || 'Error adding product', 'error', 4000);
@@ -1567,59 +1619,65 @@ body {
         });
     });
 
-   // ================= EDIT PRODUCT =================
-function openEditModal(id, name, category, unit, min_stock, has_expiry, image_path) {
-    document.getElementById('edit_id').value = id;
-    document.getElementById('edit_name').value = name;
-    document.getElementById('edit_category').value = category;
-    document.getElementById('edit_unit').value = unit;
-    document.getElementById('edit_min_stock').value = min_stock;
-    document.getElementById('edit_has_expiry').value = has_expiry ? '1' : '0';
-    
-    // Store the current image path - make sure it's not undefined or null
-    const currentImage = image_path || '/inventory-system-main/img/default-product.png';
-    document.getElementById('edit_current_image').value = currentImage;
-    document.getElementById('editPreview').src = currentImage;
-    
-    openModal('edit');
-}
+    // ================= EDIT PRODUCT =================
+    function openEditModal(id, name, category, unit, min_stock, has_expiry, image_path) {
+        document.getElementById('edit_id').value = id;
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_category').value = category;
+        document.getElementById('edit_unit_input').value = unit;
+        document.getElementById('edit_min_stock').value = min_stock;
+        document.getElementById('edit_has_expiry').value = has_expiry ? '1' : '0';
+        
+        const currentImage = image_path || '/inventory-system-main/img/default-product.png';
+        document.getElementById('edit_current_image').value = currentImage;
+        document.getElementById('editPreview').src = currentImage;
+        
+        openModal('edit');
+    }
 
-let isEditSubmitting = false;
+    let isEditSubmitting = false;
 
-document.getElementById('editProductForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    if (isEditSubmitting) return;
-    
-    isEditSubmitting = true;
-    const formData = new FormData(this);
-    
-    showLoading('Updating product...');
-    
-    fetch('../api/update_product.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.status === 'success') {
-            showToast('Product updated successfully!', 'success', 3000);
-            // Close the edit modal after successful update
-            closeModal('edit');
-            isEditSubmitting = false;
-        } else {
-            hideLoading();
-            showToast(data.message || 'Error updating product', 'error', 4000);
-            isEditSubmitting = false;
+    document.getElementById('editProductForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (isEditSubmitting) return;
+        
+        const unitInput = document.getElementById('edit_unit_input');
+        if (!unitInput.value.trim()) {
+            showToast('Please enter a unit', 'warning', 3000);
+            return;
         }
-    })
-    .catch(err => {
-        hideLoading();
-        showToast('Connection failed', 'error', 4000);
-        isEditSubmitting = false;
-        console.error('Error:', err);
+        
+        isEditSubmitting = true;
+        const formData = new FormData(this);
+        
+        showLoading('Updating product...');
+        
+        fetch('../api/update_product.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast('Product updated successfully!', 'success', 3000);
+                closeModal('edit');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                hideLoading();
+                showToast(data.message || 'Error updating product', 'error', 4000);
+                isEditSubmitting = false;
+            }
+        })
+        .catch(err => {
+            hideLoading();
+            showToast('Connection failed', 'error', 4000);
+            isEditSubmitting = false;
+            console.error('Error:', err);
+        });
     });
-});
 
     // ================= DELETE PRODUCT =================
     function confirmDelete(id, name) {
@@ -1636,8 +1694,9 @@ document.getElementById('editProductForm').addEventListener('submit', function(e
                 .then(data => {
                     if (data.status === 'success') {
                         showToast('Product deleted!', 'success', 3000);
-                        // Keep confirm modal closed, don't reload
-                        isEditSubmitting = false;
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
                     } else {
                         hideLoading();
                         showToast(data.message || 'Error deleting product', 'error', 4000);
@@ -1773,9 +1832,7 @@ document.getElementById('editProductForm').addEventListener('submit', function(e
         .then(data => {
             if (data.status === 'success') {
                 showToast('Stock added successfully!', 'success', 3000);
-                // Reset the form but keep modal open
                 document.getElementById('stockInForm').reset();
-                // Reset the expiry date to today's date
                 const expiryInput = document.getElementById('stockInNewExpiryDate');
                 const today = new Date();
                 const year = today.getFullYear();
@@ -1783,6 +1840,9 @@ document.getElementById('editProductForm').addEventListener('submit', function(e
                 const day = String(today.getDate()).padStart(2, '0');
                 expiryInput.value = `${year}-${month}-${day}`;
                 expiryInput.disabled = false;
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
             } else {
                 hideLoading();
                 showToast(data.message || 'Error adding stock', 'error', 4000);
@@ -1841,8 +1901,10 @@ document.getElementById('editProductForm').addEventListener('submit', function(e
         .then(data => {
             if (data.status === 'success') {
                 showToast('Stock removed successfully!', 'success', 3000);
-                // Reset the form but keep modal open
                 document.getElementById('stockOutForm').reset();
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
             } else {
                 hideLoading();
                 showToast(data.message || 'Error removing stock', 'error', 4000);
