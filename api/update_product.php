@@ -11,7 +11,6 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Change this from GET to POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Invalid request method']);
     exit;
@@ -23,13 +22,12 @@ if (!file_exists($uploadDir)) {
     mkdir($uploadDir, 0777, true);
 }
 
-$id = $_POST['id'] ?? ''; // Change from $_GET to $_POST
+$id = $_POST['id'] ?? '';
 $name = $_POST['name'] ?? '';
 $category_id = $_POST['category_id'] ?? '';
 $unit = $_POST['unit'] ?? '';
 $min_stock = $_POST['min_stock'] ?? '';
 $has_expiry = $_POST['has_expiry'] ?? '';
-$current_image = $_POST['current_image'] ?? '';
 
 if (!$id || !is_numeric($id)) {
     echo json_encode(['status' => 'error', 'message' => 'Invalid product ID']);
@@ -67,10 +65,11 @@ try {
     $newCategoryName = $newCategory ? $newCategory['name'] : '';
     
     // Handle image upload
-    $imagePath = $current_image; // Keep old image by default
+    $imagePath = $oldData['image_path']; // CRITICAL: Use the image path from database, NOT from form
     $oldImageDeleted = false;
     $oldImagePath = $oldData['image_path']; // Store the old image path from database
 
+    // Only process image if a new one was uploaded
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $file = $_FILES['image'];
         
@@ -95,17 +94,18 @@ try {
         
         // Generate unique filename
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $filename = uniqid() . '_' . time() . '.' . $extension;
+        $filename = 'product_' . $id . '_' . time() . '.' . $extension;
         $uploadPath = $uploadDir . $filename;
         
         // Move uploaded file
         if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
             $imagePath = 'uploads/products/' . $filename;
             
-            // Delete old image if it exists and is not the default
+            // Delete old image if it exists, is not the default, and is different from the new one
             if (!empty($oldImagePath) && 
                 strpos($oldImagePath, 'default-product.png') === false && 
-                file_exists(__DIR__ . '/../' . $oldImagePath)) {
+                file_exists(__DIR__ . '/../' . $oldImagePath) &&
+                $oldImagePath !== $imagePath) { // Don't delete if it's the same file
                 
                 if (unlink(__DIR__ . '/../' . $oldImagePath)) {
                     $oldImageDeleted = true;
@@ -119,6 +119,10 @@ try {
             echo json_encode(['status' => 'error', 'message' => 'Failed to upload image.']);
             exit;
         }
+    } else {
+        // No new image uploaded - explicitly keep the existing image from database
+        $imagePath = $oldData['image_path'];
+        error_log("No new image uploaded for product ID: " . $id . ". Keeping existing image: " . $imagePath);
     }
     
     // Update product with image path
@@ -154,7 +158,7 @@ try {
             'image_replaced' => $oldImageDeleted
         ];
         
-        // Log to product_audit table - using the structure that matches your table
+        // Log to product_audit table
         $auditStmt = $db->prepare("
             INSERT INTO product_audit (product_id, action, old_data, staff_id, created_at) 
             VALUES (?, 'UPDATE', ?, ?, NOW())
@@ -166,7 +170,7 @@ try {
         // Prepare response message
         $message = 'Product updated successfully';
         if ($oldImageDeleted) {
-            $message .= ' and old image was deleted';
+            $message .= ' and old image was replaced';
         }
         
         echo json_encode([

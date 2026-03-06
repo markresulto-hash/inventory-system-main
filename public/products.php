@@ -1094,9 +1094,9 @@ body {
                     <span class="product-badge <?= $statusClass ?>"><?= $statusText ?></span>
                     
                     <img src="<?= htmlspecialchars($product['image_path']) ?>" 
-     alt="<?= htmlspecialchars($product['name']) ?>" 
-     class="product-image"
-     onerror="this.onerror=null; this.src='/inventory-system-main/img/default-product.png';">
+                alt="<?= htmlspecialchars($product['name']) ?>" 
+                class="product-image"
+                onerror="this.onerror=null; this.src='/inventory-system-main/img/default-product.png';">
                     
                     <div class="product-info">
                         <h3 class="product-name"><?= htmlspecialchars($product['name']) ?></h3>
@@ -1549,8 +1549,11 @@ body {
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                showToast('Product added successfully!', 'success', 2000);
-                setTimeout(() => location.reload(), 2000);
+                showToast('Product added successfully!', 'success', 3000);
+                // Reset the form but keep modal open
+                document.getElementById('addProductForm').reset();
+                document.getElementById('addPreview').src = '/inventory-system-main/img/default-product.png';
+                isSubmitting = false;
             } else {
                 hideLoading();
                 showToast(data.message || 'Error adding product', 'error', 4000);
@@ -1564,53 +1567,59 @@ body {
         });
     });
 
-    // ================= EDIT PRODUCT =================
-    function openEditModal(id, name, category, unit, min_stock, has_expiry, image_path) {
-        document.getElementById('edit_id').value = id;
-        document.getElementById('edit_name').value = name;
-        document.getElementById('edit_category').value = category;
-        document.getElementById('edit_unit').value = unit;
-        document.getElementById('edit_min_stock').value = min_stock;
-        document.getElementById('edit_has_expiry').value = has_expiry ? '1' : '0';
-        document.getElementById('edit_current_image').value = image_path;
-        document.getElementById('editPreview').src = image_path || '/inventory-system-main/img/default-product.png';
-        
-        openModal('edit');
-    }
+   // ================= EDIT PRODUCT =================
+function openEditModal(id, name, category, unit, min_stock, has_expiry, image_path) {
+    document.getElementById('edit_id').value = id;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_category').value = category;
+    document.getElementById('edit_unit').value = unit;
+    document.getElementById('edit_min_stock').value = min_stock;
+    document.getElementById('edit_has_expiry').value = has_expiry ? '1' : '0';
+    
+    // Store the current image path - make sure it's not undefined or null
+    const currentImage = image_path || '/inventory-system-main/img/default-product.png';
+    document.getElementById('edit_current_image').value = currentImage;
+    document.getElementById('editPreview').src = currentImage;
+    
+    openModal('edit');
+}
 
-    let isEditSubmitting = false;
+let isEditSubmitting = false;
 
-    document.getElementById('editProductForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        if (isEditSubmitting) return;
-        
-        isEditSubmitting = true;
-        const formData = new FormData(this);
-        
-        showLoading('Updating product...');
-        
-        fetch('../api/update_product.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                showToast('Product updated successfully!', 'success', 2000);
-                setTimeout(() => location.reload(), 2000);
-            } else {
-                hideLoading();
-                showToast(data.message || 'Error updating product', 'error', 4000);
-                isEditSubmitting = false;
-            }
-        })
-        .catch(err => {
-            hideLoading();
-            showToast('Connection failed', 'error', 4000);
+document.getElementById('editProductForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (isEditSubmitting) return;
+    
+    isEditSubmitting = true;
+    const formData = new FormData(this);
+    
+    showLoading('Updating product...');
+    
+    fetch('../api/update_product.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showToast('Product updated successfully!', 'success', 3000);
+            // Close the edit modal after successful update
+            closeModal('edit');
             isEditSubmitting = false;
-        });
+        } else {
+            hideLoading();
+            showToast(data.message || 'Error updating product', 'error', 4000);
+            isEditSubmitting = false;
+        }
+    })
+    .catch(err => {
+        hideLoading();
+        showToast('Connection failed', 'error', 4000);
+        isEditSubmitting = false;
+        console.error('Error:', err);
     });
+});
 
     // ================= DELETE PRODUCT =================
     function confirmDelete(id, name) {
@@ -1626,8 +1635,9 @@ body {
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        showToast('Product deleted!', 'success', 2000);
-                        setTimeout(() => location.reload(), 2000);
+                        showToast('Product deleted!', 'success', 3000);
+                        // Keep confirm modal closed, don't reload
+                        isEditSubmitting = false;
                     } else {
                         hideLoading();
                         showToast(data.message || 'Error deleting product', 'error', 4000);
@@ -1724,9 +1734,11 @@ body {
                 expiryInput.disabled = false;
                 expiryInput.style.opacity = '1';
                 
-                const d = new Date();
-                d.setFullYear(d.getFullYear() + 1);
-                expiryInput.value = d.toISOString().split('T')[0];
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                expiryInput.value = `${year}-${month}-${day}`;
             }
         }
         
@@ -1760,8 +1772,17 @@ body {
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                showToast('Stock added successfully!', 'success', 2000);
-                setTimeout(() => location.reload(), 2000);
+                showToast('Stock added successfully!', 'success', 3000);
+                // Reset the form but keep modal open
+                document.getElementById('stockInForm').reset();
+                // Reset the expiry date to today's date
+                const expiryInput = document.getElementById('stockInNewExpiryDate');
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                expiryInput.value = `${year}-${month}-${day}`;
+                expiryInput.disabled = false;
             } else {
                 hideLoading();
                 showToast(data.message || 'Error adding stock', 'error', 4000);
@@ -1819,8 +1840,9 @@ body {
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                showToast('Stock removed successfully!', 'success', 2000);
-                setTimeout(() => location.reload(), 2000);
+                showToast('Stock removed successfully!', 'success', 3000);
+                // Reset the form but keep modal open
+                document.getElementById('stockOutForm').reset();
             } else {
                 hideLoading();
                 showToast(data.message || 'Error removing stock', 'error', 4000);
